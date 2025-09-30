@@ -124,10 +124,7 @@ for url, post_group in filtered.groupby("URL"):
         "URL": url,
         "Likes": format_indian_number(likes),
         "Total Comments": format_indian_number(total_post_comments),
-        "Overall Sentiment": overall_sentiment,
-        "Positive (%)": f"{pos_pct_post:.1f}%",
-        "Negative (%)": f"{neg_pct_post:.1f}%",
-        "Neutral (%)": f"{neu_pct_post:.1f}%"
+        "Overall Sentiment": overall_sentiment
     })
 
 summary_df = pd.DataFrame(summary_list)
