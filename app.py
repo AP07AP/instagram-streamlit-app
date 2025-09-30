@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import html  # for escaping captions
 
 # --- Load dataset ---
 try:
@@ -90,25 +91,40 @@ else:
 st.write(f"**Total Posts:** {formatted_posts}  |  **Total Likes:** {formatted_likes}  |  **Total Comments:** {formatted_comments}")
 st.markdown("---")
 
-# --- Posts Summary Table (simplified using st.dataframe) ---
+# --- Posts Summary Table with "See Post" clickable links ---
 st.markdown("## Posts Summary")
 
-summary_list = []
+table_html = """
+<table style="width:100%; border-collapse: collapse;">
+<tr>
+<th style="border: 1px solid black; padding: 8px;">Post</th>
+<th style="border: 1px solid black; padding: 8px;">URL</th>
+<th style="border: 1px solid black; padding: 8px;">Likes</th>
+<th style="border: 1px solid black; padding: 8px;">Total Comments</th>
+</tr>
+"""
+
 for url, post_group in filtered.groupby("URL"):
     caption_row = post_group[post_group["Captions"].notna()]
     caption_text = caption_row.iloc[0]["Captions"] if not caption_row.empty else ""
     likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
     total_post_comments = post_group["Comments"].notna().sum()
-    
-    summary_list.append({
-        "Post": caption_text,
-        "URL": url,
-        "Likes": format_indian_number(likes),
-        "Total Comments": format_indian_number(total_post_comments)
-    })
 
-summary_df = pd.DataFrame(summary_list)
-st.dataframe(summary_df, use_container_width=True)
+    # Escape HTML in caption
+    caption_text = html.escape(str(caption_text)).replace("\n", "<br>")
+
+    table_html += f"""
+    <tr>
+    <td style="border: 1px solid black; padding: 8px; word-wrap: break-word;">{caption_text}</td>
+    <td style="border: 1px solid black; padding: 8px;"><a href="{url}" target="_blank">See Post</a></td>
+    <td style="border: 1px solid black; padding: 8px;">{format_indian_number(likes)}</td>
+    <td style="border: 1px solid black; padding: 8px;">{format_indian_number(total_post_comments)}</td>
+    </tr>
+    """
+
+table_html += "</table>"
+
+st.markdown(table_html, unsafe_allow_html=True)
 st.markdown("---")
 
 # --- Display posts section-wise by URL ---
@@ -124,7 +140,7 @@ for url, post_group in filtered.groupby("URL"):
         st.write(f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} ❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))}")
 
     # Display comments (rows where Comments is not empty)
-    comments = post_group[post_group["Comments"].notna()]["Comments"].tolist()
+    comments = post_group["Comments"].notna()["Comments"].tolist() if not post_group.empty else []
     if comments:
         st.subheader("Comments")
         for c in comments:
