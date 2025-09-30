@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder, DataReturnMode, GridUpdateMode
 
 # --- Load dataset ---
 try:
@@ -129,25 +130,39 @@ for url, post_group in filtered.groupby("URL"):
     summary_list.append({
         "Post": caption_text,
         "URL": url,
-        "Likes": format_indian_number(likes),
-        "Total Comments": format_indian_number(total_post_comments),
+        "Likes": likes,
+        "Total Comments": total_post_comments,
         "Overall Sentiment": overall_sentiment,
-        "Positive (%)": f"{pos_pct_post:.1f}%",
-        "Negative (%)": f"{neg_pct_post:.1f}%",
-        "Neutral (%)": f"{neu_pct_post:.1f}%"
+        "Positive (%)": pos_pct_post,
+        "Negative (%)": neg_pct_post,
+        "Neutral (%)": neu_pct_post
     })
 
 summary_df = pd.DataFrame(summary_list)
-summary_df = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)
+summary_df = summary_df.sort_values(by="Likes", ascending=False)
+
+# --- Interactive Table with AgGrid ---
+gb = GridOptionsBuilder.from_dataframe(summary_df)
+gb.configure_pagination(paginationAutoPageSize=True)
+gb.configure_default_column(editable=False, groupable=True, filter=True, sortable=True, resizable=True)
+gb.configure_selection(selection_mode="single", use_checkbox=True)
+gb.configure_grid_options(domLayout='normal')
+grid_options = gb.build()
 
 st.markdown("## Posts Summary")
-st.dataframe(summary_df, use_container_width=True)
+AgGrid(
+    summary_df,
+    gridOptions=grid_options,
+    height=400,
+    width='100%',
+    data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+    update_mode=GridUpdateMode.NO_UPDATE,
+    fit_columns_on_grid_load=True
+)
 st.markdown("---")
 
 # --- Display posts section-wise by URL, sorted by Likes ---
-urls_sorted = summary_df.sort_values(
-    by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False
-)["URL"]
+urls_sorted = summary_df.sort_values(by="Likes", ascending=False)["URL"]
 
 for url in urls_sorted:
     post_group = filtered[filtered["URL"] == url]
@@ -172,12 +187,12 @@ for url in urls_sorted:
             sentiment_score = row.get("Sentiment_Score", "")
             st.write(f"- 💬 {comment_text} ({sentiment_label}: {sentiment_score})")
 
-    # --- Use sentiment values from table ---
+    # Display sentiment summary from table variables
     sentiment_row = summary_df[summary_df["URL"] == url].iloc[0]
     st.write(
-        f"Sentiment Summary: 🙂 Positive: {sentiment_row['Positive (%)']} | "
-        f"😡 Negative: {sentiment_row['Negative (%)']} | "
-        f"😐 Neutral: {sentiment_row['Neutral (%)']}"
+        f"Sentiment Summary: 🙂 Positive: {sentiment_row['Positive (%)']:.1f}% | "
+        f"😡 Negative: {sentiment_row['Negative (%)']:.1f}% | "
+        f"😐 Neutral: {sentiment_row['Neutral (%)']:.1f}%"
     )
 
     st.markdown("---")
