@@ -104,17 +104,19 @@ for url, post_group in filtered.groupby("URL"):
     
     total_post_comments = post_group["Comments"].notna().sum()
 
-    # --- Sentiment calculation ---
-    sentiment_counts = post_group["Sentiment_Label"].value_counts(normalize=True) * 100
-    pos_pct = sentiment_counts.get("positive", 0)
-    neg_pct = sentiment_counts.get("negative", 0)
-    neu_pct = sentiment_counts.get("neutral", 0)
-
-    # Pick the label with maximum %
-    overall_sentiment = max(
-        [("Positive", pos_pct), ("Negative", neg_pct), ("Neutral", neu_pct)],
-        key=lambda x: x[1]
-    )[0]
+    # Calculate sentiment percentages
+    sentiment_counts = post_group["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
+    pos_pct = sentiment_counts.get("Positive", 0.0)
+    neg_pct = sentiment_counts.get("Negative", 0.0)
+    neu_pct = sentiment_counts.get("Neutral", 0.0)
+    
+    # Pick the label with maximum percentage
+    sentiment_dict = {"Positive": pos_pct, "Negative": neg_pct, "Neutral": neu_pct}
+    max_label = max(sentiment_dict, key=sentiment_dict.get)
+    max_pct = sentiment_dict[max_label]
+    
+    # Format for table
+    overall_sentiment = f"{max_label} ({max_pct:.1f}%)"
 
     summary_list.append({
         "Post": caption_text,
