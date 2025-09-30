@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # --- Load dataset ---
-df = pd.read_csv("data/insta_posts.csv", parse_dates=["Date"])
+df = pd.read_csv("data/posts.csv", parse_dates=["Date"])
 
 # --- Clean Likes column ---
 df["Likes"] = df["Likes"].astype(str).str.replace(",", "").str.strip()
@@ -52,6 +52,24 @@ total_posts = filtered["URL"].nunique()
 total_likes = filtered[filtered["Captions"].notna()]["Likes"].sum()
 total_comments = filtered["Comments"].notna().sum()
 
+# --- Function to format number in Indian style ---
+def format_indian_number(number):
+    s = str(int(number))
+    if len(s) <= 3:
+        return s
+    else:
+        last3 = s[-3:]
+        remaining = s[:-3]
+        parts = []
+        while len(remaining) > 2:
+            parts.append(remaining[-2:])
+            remaining = remaining[:-2]
+        if remaining:
+            parts.append(remaining)
+        return ','.join(reversed(parts)) + ',' + last3
+
+formatted_likes = format_indian_number(total_likes)
+
 st.markdown("## User Overview")
 
 # Name as clickable link
@@ -60,7 +78,7 @@ if profile_url:
 else:
     st.write(f"**Name:** {selected_user}")
 
-st.write(f"**Total Posts:** {total_posts}  |  **Total Likes:** {total_likes}  |  **Total Comments:** {total_comments}")
+st.write(f"**Total Posts:** {total_posts}  |  **Total Likes:** {formatted_likes}  |  **Total Comments:** {total_comments}")
 st.markdown("---")
 
 # --- Display posts section-wise by URL ---
