@@ -167,9 +167,9 @@ for url in urls_sorted:
 
     # Sentiment distribution
     sentiment_counts = post_group["Sentiment_Label"].value_counts(normalize=True) * 100
-    pos_pct = sentiment_counts.get("Positive", 0)
-    neg_pct = sentiment_counts.get("Negative", 0)
-    neu_pct = sentiment_counts.get("Neutral", 0)
+    pos_pct = sentiment_counts.get("positive", 0)
+    neg_pct = sentiment_counts.get("negative", 0)
+    neu_pct = sentiment_counts.get("neutral", 0)
     
     st.subheader("Sentiment Overview")
     st.write(f"🙂 Positive: {pos_pct:.1f}% | 😡 Negative: {neg_pct:.1f}% | 😐 Neutral: {neu_pct:.1f}%")
