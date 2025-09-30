@@ -1,15 +1,19 @@
 import streamlit as st
 import pandas as pd
 
-# Load data
-df = pd.read_csv("data/insta_posts.csv", parse_dates=["Date"])
+# --- Load dataset ---
+df = pd.read_csv("data/posts.csv", parse_dates=["Date"])
 
+# --- Clean Likes column ---
+df["Likes"] = df["Likes"].astype(str).str.replace(",", "").str.strip()
+df["Likes"] = pd.to_numeric(df["Likes"], errors="coerce").fillna(0)
+
+# --- Streamlit title ---
 st.title("Instagram Posts Dashboard")
 
 # --- Username filter ---
 usernames = df["username"].unique()
 selected_user = st.selectbox("Select Username", usernames)
-
 user_data = df[df["username"] == selected_user]
 
 # --- Date filter ---
@@ -41,7 +45,7 @@ filtered = user_data[
 
 # --- User overview ---
 total_posts = filtered["URL"].nunique()
-total_likes = filtered[filtered["Captions"].notna()]["Likes"].fillna(0).sum()
+total_likes = filtered[filtered["Captions"].notna()]["Likes"].sum()
 total_comments = filtered["Comments"].notna().sum()
 
 st.markdown("## User Overview")
