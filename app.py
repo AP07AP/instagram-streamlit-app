@@ -69,34 +69,28 @@ def format_indian_number(number):
             parts.append(remaining)
         return ','.join(reversed(parts)) + ',' + last3
 
-# --- User overview ---
-total_posts = filtered["URL"].nunique()
-total_likes = filtered["Likes"].sum()
-total_comments = filtered["Comments"].notna().sum()
+# --- User Overview (Beautiful Version) ---
+st.markdown("## 👤 User Overview")
 
-formatted_posts = format_indian_number(total_posts)
-formatted_likes = format_indian_number(total_likes)
-formatted_comments = format_indian_number(total_comments)
-
-st.markdown("## User Overview")
+# Create 4 columns for metrics
+col1, col2, col3, col4 = st.columns(4)
 
 # Name as clickable link
 if profile_url:
-    st.markdown(f"**Name:** [{selected_user}]({profile_url})")
+    col1.markdown(f"**Name:** [{selected_user}]({profile_url})")
 else:
-    st.write(f"**Name:** {selected_user}")
+    col1.markdown(f"**Name:** {selected_user}")
 
-# --- Overall sentiment for all comments ---
-all_comments = filtered[filtered["Comments"].notna()]
-sentiment_counts = all_comments["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
-pos_pct = sentiment_counts.get("Positive", 0.0)
-neg_pct = sentiment_counts.get("Negative", 0.0)
-neu_pct = sentiment_counts.get("Neutral", 0.0)
+col2.metric("📄 Total Posts", formatted_posts)
+col3.metric("❤️ Total Likes", formatted_likes)
+col4.metric("💬 Total Comments", formatted_comments)
 
-st.write(
-    f"**Total Posts:** {formatted_posts}  |  **Total Likes:** {formatted_likes}  |  "
-    f"**Total Comments:** {formatted_comments}  |  "
-    f"**Sentiment**: 🙂 Positive: {pos_pct:.1f}% | 😡 Negative: {neg_pct:.1f}% | 😐 Neutral: {neu_pct:.1f}%"
+# Sentiment summary below metrics
+st.markdown(
+    f"### Sentiment Overview\n"
+    f"🙂 Positive: {pos_pct:.1f}%  |  "
+    f"😡 Negative: {neg_pct:.1f}%  |  "
+    f"😐 Neutral: {neu_pct:.1f}%"
 )
 st.markdown("---")
 
