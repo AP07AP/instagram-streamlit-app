@@ -39,6 +39,16 @@ filtered = user_data[
     (user_data["Time"] <= time_range[1])
 ]
 
+# --- User overview ---
+total_posts = filtered["URL"].nunique()
+total_likes = filtered[filtered["Captions"].notna()]["Likes"].fillna(0).sum()
+total_comments = filtered["Comments"].notna().sum()
+
+st.markdown("## User Overview")
+st.write(f"**Name:** {selected_user}")
+st.write(f"**Total Posts:** {total_posts}  |  **Total Likes:** {total_likes}  |  **Total Comments:** {total_comments}")
+st.markdown("---")
+
 # --- Display posts section-wise by URL ---
 for url, post_group in filtered.groupby("URL"):
     st.markdown(f"### 📌 [View Post]({url})")
