@@ -142,7 +142,9 @@ st.dataframe(summary_df, use_container_width=True)
 st.markdown("---")
 
 # --- Display posts section-wise by URL, sorted by Likes ---
-urls_sorted = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)["URL"]
+urls_sorted = summary_df.sort_values(
+    by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False
+)["URL"]
 
 for url in urls_sorted:
     post_group = filtered[filtered["URL"] == url]
@@ -167,9 +169,12 @@ for url in urls_sorted:
             sentiment_score = row.get("Sentiment_Score", "")
             st.write(f"- 💬 {comment_text} ({sentiment_label}: {sentiment_score})")
 
-    # Display full sentiment summary for the post
+    # --- Use sentiment values from table ---
+    sentiment_row = summary_df[summary_df["URL"] == url].iloc[0]
     st.write(
-        f"Sentiment Summary: 🙂 Positive: {pos_pct_post:.1f}% | 😡 Negative: {neg_pct_post:.1f}% | 😐 Neutral: {neu_pct_post:.1f}%"
+        f"Sentiment Summary: 🙂 Positive: {sentiment_row['Positive (%)']} | "
+        f"😡 Negative: {sentiment_row['Negative (%)']} | "
+        f"😐 Neutral: {sentiment_row['Neutral (%)']}"
     )
 
     st.markdown("---")
