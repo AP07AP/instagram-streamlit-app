@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
+import html  # for escaping captions
 
 # --- Load dataset ---
-df = pd.read_csv("data/insta_posts.csv", parse_dates=["Date"])
+df = pd.read_csv("data/posts.csv", parse_dates=["Date"])
 
 # --- Clean Likes column ---
 df["Likes"] = df["Likes"].astype(str).str.replace(",", "").str.strip()
@@ -99,7 +100,13 @@ table_html = """
 
 for url, post_group in filtered.groupby("URL"):
     caption_row = post_group[post_group["Captions"].notna()]
-    caption_text = caption_row.iloc[0]["Captions"] if not caption_row.empty else ""
+    if not caption_row.empty:
+        caption_text = caption_row.iloc[0]["Captions"]
+        # Escape HTML and replace newlines with <br>
+        caption_text = html.escape(str(caption_text)).replace("\n", "<br>")
+    else:
+        caption_text = ""
+    
     likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
     total_post_comments = post_group["Comments"].notna().sum()
     
