@@ -106,9 +106,9 @@ for url, post_group in filtered.groupby("URL"):
 
     # --- Sentiment calculation ---
     sentiment_counts = post_group["Sentiment_Label"].value_counts(normalize=True) * 100
-    pos_pct = sentiment_counts.get("Positive", 0)
-    neg_pct = sentiment_counts.get("Negative", 0)
-    neu_pct = sentiment_counts.get("Neutral", 0)
+    pos_pct = sentiment_counts.get("positive", 0)
+    neg_pct = sentiment_counts.get("negative", 0)
+    neu_pct = sentiment_counts.get("neutral", 0)
 
     # Pick the label with maximum %
     overall_sentiment = max(
