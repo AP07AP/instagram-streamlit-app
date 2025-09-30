@@ -154,12 +154,15 @@ for url in urls_sorted:
         st.write(caption_row["Captions"])
         st.write(f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} ❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))}")
 
-    # Display comments
-    comments = comments_only["Comments"].tolist()
-    if comments:
+    # Display comments with sentiment
+    comments_data = post_group[post_group["Comments"].notna()]
+    if not comments_data.empty:
         st.subheader("Comments")
-        for c in comments:
-            st.write(f"- 💬 {c}")
+        for _, row in comments_data.iterrows():
+            comment_text = row["Comments"]
+            sentiment_label = row.get("Sentiment_Label", "")
+            sentiment_score = row.get("Sentiment_Score", "")
+            st.write(f"- 💬 {comment_text} ({sentiment_label}: {sentiment_score})")
 
     # Display sentiment for this post
     st.write(
