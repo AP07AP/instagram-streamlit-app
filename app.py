@@ -11,10 +11,15 @@ if missing_cols:
     st.error(f"Missing columns in CSV: {missing_cols}")
     st.stop()
 
+# --- CLEAN NUMERIC COLUMNS ---
+# Remove commas and convert Likes & Comments to numeric
+df["Likes"] = pd.to_numeric(df["Likes"].astype(str).str.replace(",", ""), errors="coerce")
+df["Comments"] = pd.to_numeric(df["Comments"].astype(str).str.replace(",", ""), errors="coerce")
+
 # --- USER OVERVIEW ---
 total_posts = len(df)
-total_likes = df["Likes"].sum()
-total_comments = df["Comments"].sum()
+total_likes = int(df["Likes"].sum())
+total_comments = int(df["Comments"].sum())
 
 # Sentiment Distribution
 sentiment_counts = df["Sentiment_Label"].value_counts(normalize=True) * 100
@@ -40,6 +45,7 @@ df_sorted = df.sort_values(by="Likes", ascending=False).copy()
 df_sorted["Post Link"] = df_sorted["URL"].apply(lambda x: f"[See Post]({x})")
 
 # Select only required columns for display
-table_df = df_sorted[["Caption", "Post Link", "Likes", "Comments", "Sentiment_Label", "Sentiment_Score"]]
+table_df = df_sorted[["Captions", "Post Link", "Likes", "Comments", "Sentiment_Label", "Sentiment_Score"]]
 
+# Show as Markdown table
 st.write(table_df.to_markdown(index=False))
