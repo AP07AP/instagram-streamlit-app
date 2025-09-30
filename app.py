@@ -94,20 +94,34 @@ st.markdown("---")
 summary_list = []
 for url, post_group in filtered.groupby("URL"):
     caption_row = post_group[post_group["Captions"].notna()]
-    caption_text = caption_row.iloc[0]["Captions"] if not caption_row.empty else ""
-    likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
+    if not caption_row.empty:
+        caption_row = caption_row.iloc[0]
+        caption_text = caption_row["Captions"]
+        likes = caption_row["Likes"]
+        sentiment_label = caption_row.get("Sentiment_Label", "")
+        sentiment_score = caption_row.get("Sentiment_Score", "")
+    else:
+        caption_text = ""
+        likes = 0
+        sentiment_label = ""
+        sentiment_score = ""
+    
     total_post_comments = post_group["Comments"].notna().sum()
     
     summary_list.append({
         "Post": caption_text,
         "URL": url,  # URL clickable in dataframe
         "Likes": likes,  # keep numeric for sorting
-        "Total Comments": total_post_comments
+        "Total Comments": total_post_comments,
+        "Sentiment Label": sentiment_label,
+        "Sentiment Score": sentiment_score
     })
 
 summary_df = pd.DataFrame(summary_list)
+
 # --- Sort by Likes descending ---
 summary_df = summary_df.sort_values(by="Likes", ascending=False)
+
 # Format Likes and Total Comments in Indian format
 summary_df["Likes"] = summary_df["Likes"].apply(format_indian_number)
 summary_df["Total Comments"] = summary_df["Total Comments"].apply(format_indian_number)
@@ -117,15 +131,11 @@ st.dataframe(summary_df, use_container_width=True)
 st.markdown("---")
 
 # --- Display posts section-wise by URL, sorted by Likes ---
-for url, post_group in filtered.groupby("URL"):
-    # get likes for this post
-    caption_row = post_group[post_group["Captions"].notna()]
-    likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
-    post_group = post_group.copy()
-    post_group["Post_Likes"] = likes
-
-# sort URLs by likes
-urls_sorted = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)["URL"]
+urls_sorted = summary_df.sort_values(
+    by="Likes",
+    key=lambda x: x.str.replace(",", "").astype(int),
+    ascending=False
+)["URL"]
 
 for url in urls_sorted:
     post_group = filtered[filtered["URL"] == url]
@@ -137,7 +147,12 @@ for url in urls_sorted:
         caption_row = caption_row.iloc[0]
         st.subheader("Caption")
         st.write(caption_row["Captions"])
-        st.write(f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} ❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))}")
+        st.write(
+            f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} "
+            f"❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))} "
+            f"🧾 Sentiment: {caption_row.get('Sentiment_Label', '')} "
+            f"({caption_row.get('Sentiment_Score', '')})"
+        )
 
     # Display comments (rows where Comments is not empty)
     comments = post_group[post_group["Comments"].notna()]["Comments"].tolist()
