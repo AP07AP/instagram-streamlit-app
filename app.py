@@ -16,6 +16,10 @@ usernames = df["username"].unique()
 selected_user = st.selectbox("Select Username", usernames)
 user_data = df[df["username"] == selected_user]
 
+# --- Extract profile URL from first post URL ---
+first_post_url = user_data["URL"].iloc[0] if not user_data.empty else ""
+profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
+
 # --- Date filter ---
 min_date, max_date = user_data["Date"].min(), user_data["Date"].max()
 date_range = st.date_input(
@@ -50,6 +54,8 @@ total_comments = filtered["Comments"].notna().sum()
 
 st.markdown("## User Overview")
 st.write(f"**Name:** {selected_user}")
+if profile_url:
+    st.markdown(f"**Profile:** [Link]({profile_url})")
 st.write(f"**Total Posts:** {total_posts}  |  **Total Likes:** {total_likes}  |  **Total Comments:** {total_comments}")
 st.markdown("---")
 
