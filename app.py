@@ -83,12 +83,24 @@ else:
 st.write(f"**Total Posts:** {formatted_posts}  |  **Total Likes:** {formatted_likes}  |  **Total Comments:** {formatted_comments}")
 st.markdown("---")
 
-# --- Posts Summary Table ---
+# --- Posts Summary Table (Post/Caption, URL, Likes, Total Comments) ---
 summary_data = []
+
 for url, post_group in filtered.groupby("URL"):
+    # Caption for the post (first non-empty caption)
+    caption_row = post_group[post_group["Captions"].notna()]
+    caption_text = caption_row.iloc[0]["Captions"] if not caption_row.empty else ""
+    
+    # Likes for the post (from caption row)
+    likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
+    
+    # Total comments for the post
     total_post_comments = post_group["Comments"].notna().sum()
+    
     summary_data.append({
-        "Post/URL": f"[View Post]({url})",
+        "Post": caption_text,
+        "URL": f"[View Post]({url})",
+        "Likes": format_indian_number(likes),
         "Total Comments": format_indian_number(total_post_comments)
     })
 
@@ -107,7 +119,7 @@ for url, post_group in filtered.groupby("URL"):
         caption_row = caption_row.iloc[0]
         st.subheader("Caption")
         st.write(caption_row["Captions"])
-        st.write(f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} ❤️ Likes: {caption_row.get('Likes', '')}")
+        st.write(f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} ❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))}")
 
     # Display comments (rows where Comments is not empty)
     comments = post_group[post_group["Comments"].notna()]["Comments"].tolist()
