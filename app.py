@@ -16,7 +16,7 @@ df["Likes"] = df["Likes"].astype(str).str.replace(",", "").str.strip()
 df["Likes"] = pd.to_numeric(df["Likes"], errors="coerce").fillna(0)
 
 # --- Streamlit title ---
-st.title("Instagram Posts Dashboard")
+st.title("📊 Instagram Posts Dashboard")
 
 # --- Username filter ---
 usernames = df["username"].unique()
@@ -69,7 +69,7 @@ def format_indian_number(number):
             parts.append(remaining)
         return ','.join(reversed(parts)) + ',' + last3
 
-# --- User overview ---
+# --- Beautiful User Overview ---
 total_posts = filtered["URL"].nunique()
 total_likes = filtered["Likes"].sum()
 total_comments = filtered["Comments"].notna().sum()
@@ -78,26 +78,30 @@ formatted_posts = format_indian_number(total_posts)
 formatted_likes = format_indian_number(total_likes)
 formatted_comments = format_indian_number(total_comments)
 
-st.markdown("## User Overview")
-
-# Name as clickable link
-if profile_url:
-    st.markdown(f"**Name:** [{selected_user}]({profile_url})")
-else:
-    st.write(f"**Name:** {selected_user}")
-
-# --- Overall sentiment for all comments ---
+# Overall sentiment for all comments
 all_comments = filtered[filtered["Comments"].notna()]
 sentiment_counts = all_comments["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
 pos_pct = sentiment_counts.get("Positive", 0.0)
 neg_pct = sentiment_counts.get("Negative", 0.0)
 neu_pct = sentiment_counts.get("Neutral", 0.0)
 
-st.write(
-    f"**Total Posts:** {formatted_posts}  |  **Total Likes:** {formatted_likes}  |  "
-    f"**Total Comments:** {formatted_comments}  |  "
-    f"**Sentiment**: 🙂 Positive: {pos_pct:.1f}% | 😡 Negative: {neg_pct:.1f}% | 😐 Neutral: {neu_pct:.1f}%"
-)
+st.markdown("## 👤 User Overview")
+col1, col2, col3, col4, col5 = st.columns([2,1,1,1,2])
+with col1:
+    if profile_url:
+        st.markdown(f"**Name:** [{selected_user}]({profile_url})")
+    else:
+        st.markdown(f"**Name:** {selected_user}")
+col2.metric("📄 Total Posts", formatted_posts)
+col3.metric("❤️ Total Likes", formatted_likes)
+col4.metric("💬 Total Comments", formatted_comments)
+with col5:
+    st.markdown(
+        f"**Sentiment:**  \n"
+        f"🙂 Positive: {pos_pct:.1f}%  \n"
+        f"😡 Negative: {neg_pct:.1f}%  \n"
+        f"😐 Neutral: {neu_pct:.1f}%"
+    )
 st.markdown("---")
 
 # --- Prepare Posts Summary Table ---
@@ -124,10 +128,7 @@ for url, post_group in filtered.groupby("URL"):
         "URL": url,
         "Likes": format_indian_number(likes),
         "Total Comments": format_indian_number(total_post_comments),
-        "Overall Sentiment": overall_sentiment,
-        "Positive (%)": f"{pos_pct_post:.1f}%",
-        "Negative (%)": f"{neg_pct_post:.1f}%",
-        "Neutral (%)": f"{neu_pct_post:.1f}%"
+        "Overall Sentiment": overall_sentiment
     })
 
 summary_df = pd.DataFrame(summary_list)
