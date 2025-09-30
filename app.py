@@ -172,9 +172,9 @@ for url in urls_sorted:
     # --- Use sentiment values from table ---
     sentiment_row = summary_df[summary_df["URL"] == url].iloc[0]
     st.write(
-        f"Sentiment Summary: 🙂 Positive: {sentiment_row['Positive (%)']} | "
-        f"😡 Negative: {sentiment_row['Negative (%)']} | "
-        f"😐 Neutral: {sentiment_row['Neutral (%)']}"
+        f"Sentiment Summary: 🙂 Positive: {pos_pct_post]} | "
+        f"😡 Negative: {neg_pct_post} | "
+        f"😐 Neutral: {neu_pct_post}"
     )
 
     st.markdown("---")
