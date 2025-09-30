@@ -47,11 +47,6 @@ filtered = user_data[
     (user_data["Time"] <= time_range[1])
 ]
 
-# --- User overview ---
-total_posts = filtered["URL"].nunique()
-total_likes = filtered[filtered["Captions"].notna()]["Likes"].sum()
-total_comments = filtered["Comments"].notna().sum()
-
 # --- Function to format number in Indian style ---
 def format_indian_number(number):
     s = str(int(number))
@@ -68,7 +63,14 @@ def format_indian_number(number):
             parts.append(remaining)
         return ','.join(reversed(parts)) + ',' + last3
 
+# --- User overview ---
+total_posts = filtered["URL"].nunique()
+total_likes = filtered[filtered["Captions"].notna()]["Likes"].sum()
+total_comments = filtered["Comments"].notna().sum()
+
+formatted_posts = format_indian_number(total_posts)
 formatted_likes = format_indian_number(total_likes)
+formatted_comments = format_indian_number(total_comments)
 
 st.markdown("## User Overview")
 
@@ -78,7 +80,21 @@ if profile_url:
 else:
     st.write(f"**Name:** {selected_user}")
 
-st.write(f"**Total Posts:** {total_posts}  |  **Total Likes:** {formatted_likes}  |  **Total Comments:** {total_comments}")
+st.write(f"**Total Posts:** {formatted_posts}  |  **Total Likes:** {formatted_likes}  |  **Total Comments:** {formatted_comments}")
+st.markdown("---")
+
+# --- Posts Summary Table ---
+summary_data = []
+for url, post_group in filtered.groupby("URL"):
+    total_post_comments = post_group["Comments"].notna().sum()
+    summary_data.append({
+        "Post/URL": f"[View Post]({url})",
+        "Total Comments": format_indian_number(total_post_comments)
+    })
+
+summary_df = pd.DataFrame(summary_data)
+st.markdown("## Posts Summary")
+st.dataframe(summary_df, use_container_width=True)
 st.markdown("---")
 
 # --- Display posts section-wise by URL ---
