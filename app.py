@@ -1,51 +1,149 @@
 import streamlit as st
 import pandas as pd
 
-# Load Data
-df = pd.read_csv("data/sentiments.csv")
-
-# Ensure necessary columns exist
-required_cols = ["Captions", "URL", "Likes", "Comments", "Sentiment_Label", "Sentiment_Score"]
-missing_cols = [col for col in required_cols if col not in df.columns]
-if missing_cols:
-    st.error(f"Missing columns in CSV: {missing_cols}")
+# --- Load dataset ---
+try:
+    df = pd.read_csv("data/insta_posts.csv", parse_dates=["Date"])
+except FileNotFoundError:
+    st.error("CSV file not found! Make sure 'data/posts.csv' exists.")
+    st.stop()
+except pd.errors.EmptyDataError:
+    st.error("CSV file is empty! Please provide a valid CSV with data.")
     st.stop()
 
-# --- CLEAN NUMERIC COLUMNS ---
-# Remove commas and convert Likes & Comments to numeric
-df["Likes"] = pd.to_numeric(df["Likes"].astype(str).str.replace(",", ""), errors="coerce")
-df["Comments"] = pd.to_numeric(df["Comments"].astype(str).str.replace(",", ""), errors="coerce")
+# --- Clean Likes column ---
+df["Likes"] = df["Likes"].astype(str).str.replace(",", "").str.strip()
+df["Likes"] = pd.to_numeric(df["Likes"], errors="coerce").fillna(0)
 
-# --- USER OVERVIEW ---
-total_posts = len(df)
-total_likes = int(df["Likes"].sum())
-total_comments = int(df["Comments"].sum())
+# --- Streamlit title ---
+st.title("Instagram Posts Dashboard")
 
-# Sentiment Distribution
-sentiment_counts = df["Sentiment_Label"].value_counts(normalize=True) * 100
-positive_pct = sentiment_counts.get("Positive", 0)
-negative_pct = sentiment_counts.get("Negative", 0)
-neutral_pct = sentiment_counts.get("Neutral", 0)
+# --- Username filter ---
+usernames = df["username"].unique()
+selected_user = st.selectbox("Select Username", usernames)
+user_data = df[df["username"] == selected_user]
 
-st.subheader("User Overview")
-st.write(
-    f"**Total Posts:** {total_posts} | "
-    f"**Total Likes:** {total_likes:,} | "
-    f"**Total Comments:** {total_comments:,} | "
-    f"**Sentiment:** {positive_pct:.1f}% Positive, {negative_pct:.1f}% Negative, {neutral_pct:.1f}% Neutral"
+# --- Extract profile URL from first post URL ---
+first_post_url = user_data["URL"].iloc[0] if not user_data.empty else ""
+profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
+
+# --- Date filter ---
+min_date, max_date = user_data["Date"].min(), user_data["Date"].max()
+date_range = st.date_input(
+    "Select Date Range",
+    value=[min_date, max_date],
+    min_value=min_date,
+    max_value=max_date
 )
 
-# --- TABLE OF POSTS ---
-st.subheader("Posts Overview")
+# --- Time filter ---
+user_data["Time"] = pd.to_datetime(user_data["Time"], format='%H:%M:%S').dt.time
+min_time, max_time = user_data["Time"].min(), user_data["Time"].max()
+time_range = st.slider(
+    "Select Time Range",
+    min_value=min_time,
+    max_value=max_time,
+    value=(min_time, max_time)
+)
 
-# Sort posts by Likes (highest first)
-df_sorted = df.sort_values(by="Likes", ascending=False).copy()
+# --- Apply filters ---
+filtered = user_data[
+    (user_data["Date"] >= pd.to_datetime(date_range[0])) &
+    (user_data["Date"] <= pd.to_datetime(date_range[1])) &
+    (user_data["Time"] >= time_range[0]) &
+    (user_data["Time"] <= time_range[1])
+]
 
-# Make URL clickable with display text "See Post"
-df_sorted["Post Link"] = df_sorted["URL"].apply(lambda x: f"[See Post]({x})")
+# --- Function to format number in Indian style ---
+def format_indian_number(number):
+    s = str(int(number))
+    if len(s) <= 3:
+        return s
+    else:
+        last3 = s[-3:]
+        remaining = s[:-3]
+        parts = []
+        while len(remaining) > 2:
+            parts.append(remaining[-2:])
+            remaining = remaining[:-2]
+        if remaining:
+            parts.append(remaining)
+        return ','.join(reversed(parts)) + ',' + last3
 
-# Select only required columns for display
-table_df = df_sorted[["Captions", "Post Link", "Likes", "Comments", "Sentiment_Label", "Sentiment_Score"]]
+# --- User overview ---
+total_posts = filtered["URL"].nunique()
+total_likes = filtered[filtered["Captions"].notna()]["Likes"].sum()
+total_comments = filtered["Comments"].notna().sum()
 
-# Show as Markdown table
-st.write(table_df.to_markdown(index=False))
+formatted_posts = format_indian_number(total_posts)
+formatted_likes = format_indian_number(total_likes)
+formatted_comments = format_indian_number(total_comments)
+
+st.markdown("## User Overview")
+
+# Name as clickable link
+if profile_url:
+    st.markdown(f"**Name:** [{selected_user}]({profile_url})")
+else:
+    st.write(f"**Name:** {selected_user}")
+
+st.write(f"**Total Posts:** {formatted_posts}  |  **Total Likes:** {formatted_likes}  |  **Total Comments:** {formatted_comments}")
+st.markdown("---")
+
+# --- Prepare Posts Summary Table ---
+summary_list = []
+for url, post_group in filtered.groupby("URL"):
+    caption_row = post_group[post_group["Captions"].notna()]
+    caption_text = caption_row.iloc[0]["Captions"] if not caption_row.empty else ""
+    likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
+    total_post_comments = post_group["Comments"].notna().sum()
+    
+    summary_list.append({
+        "Post": caption_text,
+        "URL": url,  # URL clickable in dataframe
+        "Likes": likes,  # keep numeric for sorting
+        "Total Comments": total_post_comments
+    })
+
+summary_df = pd.DataFrame(summary_list)
+# --- Sort by Likes descending ---
+summary_df = summary_df.sort_values(by="Likes", ascending=False)
+# Format Likes and Total Comments in Indian format
+summary_df["Likes"] = summary_df["Likes"].apply(format_indian_number)
+summary_df["Total Comments"] = summary_df["Total Comments"].apply(format_indian_number)
+
+st.markdown("## Posts Summary")
+st.dataframe(summary_df, use_container_width=True)
+st.markdown("---")
+
+# --- Display posts section-wise by URL, sorted by Likes ---
+for url, post_group in filtered.groupby("URL"):
+    # get likes for this post
+    caption_row = post_group[post_group["Captions"].notna()]
+    likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
+    post_group = post_group.copy()
+    post_group["Post_Likes"] = likes
+
+# sort URLs by likes
+urls_sorted = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)["URL"]
+
+for url in urls_sorted:
+    post_group = filtered[filtered["URL"] == url]
+    st.markdown(f"### 📌 [View Post]({url})")
+    
+    # Display caption (first row where Captions is not empty)
+    caption_row = post_group[post_group["Captions"].notna()]
+    if not caption_row.empty:
+        caption_row = caption_row.iloc[0]
+        st.subheader("Caption")
+        st.write(caption_row["Captions"])
+        st.write(f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} ❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))}")
+
+    # Display comments (rows where Comments is not empty)
+    comments = post_group[post_group["Comments"].notna()]["Comments"].tolist()
+    if comments:
+        st.subheader("Comments")
+        for c in comments:
+            st.write(f"- 💬 {c}")
+
+    st.markdown("---")
