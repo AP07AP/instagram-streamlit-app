@@ -92,9 +92,12 @@ with col1:
         st.markdown(f"**Name:** [{selected_user}]({profile_url})")
     else:
         st.markdown(f"**Name:** {selected_user}")
-col2.metric("📄 Total Posts", formatted_posts)
-col3.metric("❤️ Total Likes", formatted_likes)
-col4.metric("💬 Total Comments", formatted_comments)
+with col2:
+    st.write(f"📄 **Total Posts:** {formatted_posts}")
+with col3:
+    st.write(f"❤️ **Total Likes:** {formatted_likes}")
+with col4:
+    st.write(f"💬 **Total Comments:** {formatted_comments}")
 with col5:
     st.markdown(
         f"**Sentiment:**  \n"
