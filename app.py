@@ -142,7 +142,7 @@ urls_sorted = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(","
 
 for url in urls_sorted:
     post_group = filtered[filtered["URL"] == url]
-    comments_only = post_group[post_group["Comments"].notna()]
+    comments_only = post_group["Comments"]
 
     st.markdown(f"### 📌 [View Post]({url})")
     
