@@ -127,7 +127,7 @@ for url, post_group in filtered.groupby("URL"):
 
     summary_list.append({
         "Post": caption_text,
-        "URL": url,
+        "URL": f"[View Post]({url})",
         "Likes": format_indian_number(likes),
         "Total Comments": format_indian_number(total_post_comments),
         "Overall Sentiment": overall_sentiment,
@@ -139,16 +139,13 @@ for url, post_group in filtered.groupby("URL"):
 summary_df = pd.DataFrame(summary_list)
 summary_df = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)
 
-# --- Beautiful Posts Table ---
+# --- Display adjustable, scrollable table ---
 st.markdown("## 📝 Posts Summary")
-def make_clickable(url):
-    return f'<a href="{url}" target="_blank">View Post</a>'
-
-summary_df["URL"] = summary_df["URL"].apply(make_clickable)
-summary_df = summary_df[["Post","URL","Likes","Total Comments","Overall Sentiment","Positive (%)","Negative (%)","Neutral (%)"]]
-
-st.write(
-    summary_df.to_html(escape=False, index=False), 
-    unsafe_allow_html=True
+st.dataframe(
+    summary_df.style.set_properties(**{
+        'white-space': 'pre-wrap',   # wrap text in Post column
+        'text-align': 'left'
+    }).hide_index(),
+    height=500
 )
 st.markdown("---")
