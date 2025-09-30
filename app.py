@@ -27,14 +27,13 @@ user_data = df[df["username"] == selected_user]
 first_post_url = user_data["URL"].iloc[0] if not user_data.empty else ""
 profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
 
-# --- Date filter ---
+# --- Date filter with From and To ---
 min_date, max_date = user_data["Date"].min(), user_data["Date"].max()
-date_range = st.date_input(
-    "Select Date Range",
-    value=[min_date, max_date],
-    min_value=min_date,
-    max_value=max_date
-)
+col1, col2 = st.columns(2)
+with col1:
+    from_date = st.date_input("From", value=min_date, min_value=min_date, max_value=max_date)
+with col2:
+    to_date = st.date_input("To", value=max_date, min_value=min_date, max_value=max_date)
 
 # --- Time filter ---
 user_data["Time"] = pd.to_datetime(user_data["Time"], format='%H:%M:%S').dt.time
@@ -48,8 +47,8 @@ time_range = st.slider(
 
 # --- Apply filters ---
 filtered = user_data[
-    (user_data["Date"] >= pd.to_datetime(date_range[0])) &
-    (user_data["Date"] <= pd.to_datetime(date_range[1])) &
+    (user_data["Date"] >= pd.to_datetime(from_date)) &
+    (user_data["Date"] <= pd.to_datetime(to_date)) &
     (user_data["Time"] >= time_range[0]) &
     (user_data["Time"] <= time_range[1])
 ]
@@ -104,9 +103,7 @@ st.markdown("---")
 # --- Prepare Posts Summary Table ---
 summary_list = []
 for url, post_group in filtered.groupby("URL"):
-    # Only consider comment rows for sentiment
     comments_only = post_group[post_group["Comments"].notna()]
-    # Caption row
     caption_row = post_group[post_group["Captions"].notna()]
     caption_text = caption_row.iloc[0]["Captions"] if not caption_row.empty else ""
     likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
@@ -121,7 +118,6 @@ for url, post_group in filtered.groupby("URL"):
     max_label = max(sentiment_dict, key=sentiment_dict.get)
     max_pct = sentiment_dict[max_label]
     overall_sentiment = f"{max_label} ({max_pct:.1f}%)"
-    full_sentiment_summary = f"🙂 Positive: {pos_pct_post:.1f}% | 😡 Negative: {neg_pct_post:.1f}% | 😐 Neutral: {neu_pct_post:.1f}%"
 
     summary_list.append({
         "Post": caption_text,
@@ -129,14 +125,16 @@ for url, post_group in filtered.groupby("URL"):
         "Likes": format_indian_number(likes),
         "Total Comments": format_indian_number(total_post_comments),
         "Overall Sentiment": overall_sentiment,
-        "Full Sentiment": full_sentiment_summary
+        "Positive (%)": f"{pos_pct_post:.1f}%",
+        "Negative (%)": f"{neg_pct_post:.1f}%",
+        "Neutral (%)": f"{neu_pct_post:.1f}%"
     })
 
 summary_df = pd.DataFrame(summary_list)
 summary_df = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)
 
 st.markdown("## Posts Summary")
-st.dataframe(summary_df[["Post", "URL", "Likes", "Total Comments", "Overall Sentiment"]], use_container_width=True)
+st.dataframe(summary_df, use_container_width=True)
 st.markdown("---")
 
 # --- Display posts section-wise by URL, sorted by Likes ---
@@ -144,7 +142,8 @@ urls_sorted = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(","
 
 for url in urls_sorted:
     post_group = filtered[filtered["URL"] == url]
-    
+    comments_only = post_group[post_group["Comments"].notna()]
+
     st.markdown(f"### 📌 [View Post]({url})")
     
     # Display caption
@@ -156,17 +155,17 @@ for url in urls_sorted:
         st.write(f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} ❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))}")
 
     # Display comments with sentiment
-    comments_data = post_group[post_group["Comments"].notna()]
-    if not comments_data.empty:
+    if not comments_only.empty:
         st.subheader("Comments")
-        for _, row in comments_data.iterrows():
+        for _, row in comments_only.iterrows():
             comment_text = row["Comments"]
             sentiment_label = row.get("Sentiment_Label", "")
             sentiment_score = row.get("Sentiment_Score", "")
             st.write(f"- 💬 {comment_text} ({sentiment_label}: {sentiment_score})")
-    
-    # --- Display full sentiment breakdown for this post ---
-    full_sentiment_summary = summary_df[summary_df["URL"] == url]["Full Sentiment"].values[0]
-    st.write(f"Sentiment: {full_sentiment_summary}")
+
+    # Display full sentiment summary for the post
+    st.write(
+        f"Sentiment Summary: 🙂 Positive: {pos_pct_post:.1f}% | 😡 Negative: {neg_pct_post:.1f}% | 😐 Neutral: {neu_pct_post:.1f}%"
+    )
 
     st.markdown("---")
