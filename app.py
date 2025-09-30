@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # --- Load dataset ---
-df = pd.read_csv("data/posts.csv", parse_dates=["Date"])
+df = pd.read_csv("data/insta_posts.csv", parse_dates=["Date"])
 
 # --- Clean Likes column ---
 df["Likes"] = df["Likes"].astype(str).str.replace(",", "").str.strip()
