@@ -121,20 +121,22 @@ for url, post_group in filtered.groupby("URL"):
     max_label = max(sentiment_dict, key=sentiment_dict.get)
     max_pct = sentiment_dict[max_label]
     overall_sentiment = f"{max_label} ({max_pct:.1f}%)"
+    full_sentiment_summary = f"🙂 Positive: {pos_pct_post:.1f}% | 😡 Negative: {neg_pct_post:.1f}% | 😐 Neutral: {neu_pct_post:.1f}%"
 
     summary_list.append({
         "Post": caption_text,
         "URL": url,
         "Likes": format_indian_number(likes),
         "Total Comments": format_indian_number(total_post_comments),
-        "Overall Sentiment": overall_sentiment
+        "Overall Sentiment": overall_sentiment,
+        "Full Sentiment": full_sentiment_summary
     })
 
 summary_df = pd.DataFrame(summary_list)
 summary_df = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)
 
 st.markdown("## Posts Summary")
-st.dataframe(summary_df, use_container_width=True)
+st.dataframe(summary_df[["Post", "URL", "Likes", "Total Comments", "Overall Sentiment"]], use_container_width=True)
 st.markdown("---")
 
 # --- Display posts section-wise by URL, sorted by Likes ---
@@ -163,8 +165,8 @@ for url in urls_sorted:
             sentiment_score = row.get("Sentiment_Score", "")
             st.write(f"- 💬 {comment_text} ({sentiment_label}: {sentiment_score})")
     
-    # --- Display overall sentiment for this post (from table) ---
-    overall_sentiment = summary_df[summary_df["URL"] == url]["Overall Sentiment"].values[0]
-    st.write(f"Overall Sentiment for this post: {overall_sentiment}")
+    # --- Display full sentiment breakdown for this post ---
+    full_sentiment_summary = summary_df[summary_df["URL"] == url]["Full Sentiment"].values[0]
+    st.write(f"Sentiment: {full_sentiment_summary}")
 
     st.markdown("---")
