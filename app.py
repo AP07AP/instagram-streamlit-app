@@ -72,7 +72,7 @@ def format_indian_number(number):
 
 # --- User overview ---
 total_posts = filtered["URL"].nunique()
-total_likes = filtered[filtered["Captions"].notna()]["Likes"].sum()
+total_likes = filtered["Likes"].sum()
 total_comments = filtered["Comments"].notna().sum()
 
 formatted_posts = format_indian_number(total_posts)
@@ -142,8 +142,7 @@ urls_sorted = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(","
 
 for url in urls_sorted:
     post_group = filtered[filtered["URL"] == url]
-    comments_only = post_group["Comments"]
-
+    
     st.markdown(f"### 📌 [View Post]({url})")
     
     # Display caption
@@ -163,10 +162,9 @@ for url in urls_sorted:
             sentiment_label = row.get("Sentiment_Label", "")
             sentiment_score = row.get("Sentiment_Score", "")
             st.write(f"- 💬 {comment_text} ({sentiment_label}: {sentiment_score})")
-
-    # Display sentiment for this post
-    st.write(
-        f"Sentiment: 🙂 Positive: {pos_pct_post:.1f}% | 😡 Negative: {neg_pct_post:.1f}% | 😐 Neutral: {neu_pct_post:.1f}%"
-    )
+    
+    # --- Display overall sentiment for this post (from table) ---
+    overall_sentiment = summary_df[summary_df["URL"] == url]["Overall Sentiment"].values[0]
+    st.write(f"Overall Sentiment for this post: {overall_sentiment}")
 
     st.markdown("---")
