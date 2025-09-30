@@ -1,5 +1,9 @@
 import streamlit as st
 import pandas as pd
+import os
+print(os.getcwd())
+print(os.listdir())
+
 import html  # for escaping captions
 
 # --- Load dataset ---
