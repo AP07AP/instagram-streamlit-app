@@ -69,7 +69,7 @@ def format_indian_number(number):
             parts.append(remaining)
         return ','.join(reversed(parts)) + ',' + last3
 
-# --- User Overview ---
+# --- Beautiful User Overview ---
 total_posts = filtered["URL"].nunique()
 total_likes = filtered["Likes"].sum()
 total_comments = filtered["Comments"].notna().sum()
@@ -78,6 +78,7 @@ formatted_posts = format_indian_number(total_posts)
 formatted_likes = format_indian_number(total_likes)
 formatted_comments = format_indian_number(total_comments)
 
+# Overall sentiment for all comments
 all_comments = filtered[filtered["Comments"].notna()]
 sentiment_counts = all_comments["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
 pos_pct = sentiment_counts.get("Positive", 0.0)
@@ -115,7 +116,7 @@ for url, post_group in filtered.groupby("URL"):
     likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
     total_post_comments = comments_only.shape[0]
 
-    # Sentiment per post
+    # Sentiment per post (from comments only)
     sentiment_counts_post = comments_only["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
     pos_pct_post = sentiment_counts_post.get("Positive", 0.0)
     neg_pct_post = sentiment_counts_post.get("Negative", 0.0)
@@ -127,7 +128,7 @@ for url, post_group in filtered.groupby("URL"):
 
     summary_list.append({
         "Post": caption_text,
-        "URL": f"[Link]({url})",
+        "URL": url,
         "Likes": format_indian_number(likes),
         "Total Comments": format_indian_number(total_post_comments),
         "Overall Sentiment": overall_sentiment,
@@ -137,29 +138,24 @@ for url, post_group in filtered.groupby("URL"):
     })
 
 summary_df = pd.DataFrame(summary_list)
-summary_df = summary_df.sort_values(by="Likes", ascending=False)
+summary_df = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)
 
-# --- Display scrollable, responsive table ---
 st.markdown("## Posts Summary")
-st.dataframe(
-    summary_df.style.set_properties(
-        subset=["Post"], **{"white-space": "pre-wrap", "text-align": "left"}
-    ),
-    height=500,
-    width=1000
-)
+st.dataframe(summary_df, use_container_width=True)
 st.markdown("---")
 
-# --- Display posts section-wise ---
-urls_sorted = summary_df.sort_values(by="Likes", ascending=False)["URL"]
+# --- Display posts section-wise by URL, sorted by Likes ---
+urls_sorted = summary_df.sort_values(
+    by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False
+)["URL"]
 
 for url in urls_sorted:
-    post_group = filtered[filtered["URL"] == url.strip("[]()").split("Link")[1]]  # extract actual URL
+    post_group = filtered[filtered["URL"] == url]
     comments_only = post_group[post_group["Comments"].notna()]
 
-    st.markdown(f"### 📌 [View Post]({url.strip('[]()')})")
+    st.markdown(f"### 📌 [View Post]({url})")
     
-    # Caption
+    # Display caption
     caption_row = post_group[post_group["Captions"].notna()]
     if not caption_row.empty:
         caption_row = caption_row.iloc[0]
@@ -167,7 +163,7 @@ for url in urls_sorted:
         st.write(caption_row["Captions"])
         st.write(f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} ❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))}")
 
-    # Comments
+    # Display comments with sentiment
     if not comments_only.empty:
         st.subheader("Comments")
         for _, row in comments_only.iterrows():
@@ -176,11 +172,12 @@ for url in urls_sorted:
             sentiment_score = row.get("Sentiment_Score", "")
             st.write(f"- 💬 {comment_text} ({sentiment_label}: {sentiment_score})")
 
-    # Sentiment summary from table variables
+    # --- Use sentiment values from table ---
     sentiment_row = summary_df[summary_df["URL"] == url].iloc[0]
     st.write(
         f"Sentiment Summary: 🙂 Positive: {sentiment_row['Positive (%)']} | "
         f"😡 Negative: {sentiment_row['Negative (%)']} | "
         f"😐 Neutral: {sentiment_row['Neutral (%)']}"
     )
+
     st.markdown("---")
