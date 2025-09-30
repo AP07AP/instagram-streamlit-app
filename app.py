@@ -88,8 +88,8 @@ else:
     st.write(f"**Name:** {selected_user}")
 
 # --- Overall sentiment for all comments ---
-all_comments = filtered[filtered["Comments"].notna()]
-sentiment_counts = all_comments["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
+# all_comments = filtered[filtered["Comments"].notna()]
+sentiment_counts = filtered["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
 pos_pct = sentiment_counts.get("Positive", 0.0)
 neg_pct = sentiment_counts.get("Negative", 0.0)
 neu_pct = sentiment_counts.get("Neutral", 0.0)
@@ -97,7 +97,7 @@ neu_pct = sentiment_counts.get("Neutral", 0.0)
 st.write(
     f"**Total Posts:** {formatted_posts}  |  **Total Likes:** {formatted_likes}  |  "
     f"**Total Comments:** {formatted_comments}  |  "
-    f"Sentiment: 🙂 Positive: {pos_pct:.1f}% | 😡 Negative: {neg_pct:.1f}% | 😐 Neutral: {neu_pct:.1f}%"
+    f"**Sentiment**: 🙂 Positive: {pos_pct:.1f}% | 😡 Negative: {neg_pct:.1f}% | 😐 Neutral: {neu_pct:.1f}%"
 )
 st.markdown("---")
 
