@@ -1,13 +1,15 @@
 import streamlit as st
 import pandas as pd
-import os
-print(os.getcwd())
-print(os.listdir())
-
-import html  # for escaping captions
 
 # --- Load dataset ---
-df = pd.read_csv("data/insta_posts.csv", parse_dates=["Date"])
+try:
+    df = pd.read_csv("data/insta_posts.csv", parse_dates=["Date"])
+except FileNotFoundError:
+    st.error("CSV file not found! Make sure 'data/posts.csv' exists.")
+    st.stop()
+except pd.errors.EmptyDataError:
+    st.error("CSV file is empty! Please provide a valid CSV with data.")
+    st.stop()
 
 # --- Clean Likes column ---
 df["Likes"] = df["Likes"].astype(str).str.replace(",", "").str.strip()
@@ -88,44 +90,25 @@ else:
 st.write(f"**Total Posts:** {formatted_posts}  |  **Total Likes:** {formatted_likes}  |  **Total Comments:** {formatted_comments}")
 st.markdown("---")
 
-# --- Posts Summary Table with clickable 'Click URL' ---
+# --- Posts Summary Table (simplified using st.dataframe) ---
 st.markdown("## Posts Summary")
 
-table_html = """
-<div style="overflow-x:auto;">
-<table style="width:100%; border-collapse: collapse;">
-<tr>
-<th style="border: 1px solid black; padding: 8px; text-align:left;">Post</th>
-<th style="border: 1px solid black; padding: 8px; text-align:left;">URL</th>
-<th style="border: 1px solid black; padding: 8px; text-align:left;">Likes</th>
-<th style="border: 1px solid black; padding: 8px; text-align:left;">Total Comments</th>
-</tr>
-"""
-
+summary_list = []
 for url, post_group in filtered.groupby("URL"):
     caption_row = post_group[post_group["Captions"].notna()]
-    if not caption_row.empty:
-        caption_text = caption_row.iloc[0]["Captions"]
-        # Escape HTML and replace newlines with <br>
-        caption_text = html.escape(str(caption_text)).replace("\n", "<br>")
-    else:
-        caption_text = ""
-    
+    caption_text = caption_row.iloc[0]["Captions"] if not caption_row.empty else ""
     likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
     total_post_comments = post_group["Comments"].notna().sum()
     
-    table_html += f"""
-    <tr>
-    <td style="border: 1px solid black; padding: 8px; word-wrap: break-word; max-width:400px;">{caption_text}</td>
-    <td style="border: 1px solid black; padding: 8px;"><a href="{url}" target="_blank">Click URL</a></td>
-    <td style="border: 1px solid black; padding: 8px;">{format_indian_number(likes)}</td>
-    <td style="border: 1px solid black; padding: 8px;">{format_indian_number(total_post_comments)}</td>
-    </tr>
-    """
+    summary_list.append({
+        "Post": caption_text,
+        "URL": url,
+        "Likes": format_indian_number(likes),
+        "Total Comments": format_indian_number(total_post_comments)
+    })
 
-table_html += "</table></div>"
-
-st.markdown(table_html, unsafe_allow_html=True)
+summary_df = pd.DataFrame(summary_list)
+st.dataframe(summary_df, use_container_width=True)
 st.markdown("---")
 
 # --- Display posts section-wise by URL ---
