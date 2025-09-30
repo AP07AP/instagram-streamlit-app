@@ -83,30 +83,37 @@ else:
 st.write(f"**Total Posts:** {formatted_posts}  |  **Total Likes:** {formatted_likes}  |  **Total Comments:** {formatted_comments}")
 st.markdown("---")
 
-# --- Posts Summary Table (Post/Caption, URL, Likes, Total Comments) ---
-summary_data = []
+# --- Posts Summary Table with clickable 'Click URL' ---
+st.markdown("## Posts Summary")
+
+table_html = """
+<table style="width:100%; border-collapse: collapse;">
+<tr>
+<th style="border: 1px solid black; padding: 8px;">Post</th>
+<th style="border: 1px solid black; padding: 8px;">URL</th>
+<th style="border: 1px solid black; padding: 8px;">Likes</th>
+<th style="border: 1px solid black; padding: 8px;">Total Comments</th>
+</tr>
+"""
 
 for url, post_group in filtered.groupby("URL"):
-    # Caption for the post (first non-empty caption)
     caption_row = post_group[post_group["Captions"].notna()]
     caption_text = caption_row.iloc[0]["Captions"] if not caption_row.empty else ""
-    
-    # Likes for the post (from caption row)
     likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
-    
-    # Total comments for the post
     total_post_comments = post_group["Comments"].notna().sum()
     
-    summary_data.append({
-        "Post": caption_text,
-        "URL": f"[View Post]({url})",
-        "Likes": format_indian_number(likes),
-        "Total Comments": format_indian_number(total_post_comments)
-    })
+    table_html += f"""
+    <tr>
+    <td style="border: 1px solid black; padding: 8px; word-wrap: break-word;">{caption_text}</td>
+    <td style="border: 1px solid black; padding: 8px;"><a href="{url}" target="_blank">Click URL</a></td>
+    <td style="border: 1px solid black; padding: 8px;">{format_indian_number(likes)}</td>
+    <td style="border: 1px solid black; padding: 8px;">{format_indian_number(total_post_comments)}</td>
+    </tr>
+    """
 
-summary_df = pd.DataFrame(summary_data)
-st.markdown("## Posts Summary")
-st.dataframe(summary_df, use_container_width=True)
+table_html += "</table>"
+
+st.markdown(table_html, unsafe_allow_html=True)
 st.markdown("---")
 
 # --- Display posts section-wise by URL ---
