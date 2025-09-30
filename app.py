@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from st_aggrid import AgGrid, GridOptionsBuilder, DataReturnMode, GridUpdateMode
 
 # --- Load dataset ---
 try:
@@ -54,7 +53,7 @@ filtered = user_data[
     (user_data["Time"] <= time_range[1])
 ]
 
-# --- Function to format number in Indian style ---
+# --- Format numbers in Indian style ---
 def format_indian_number(number):
     s = str(int(number))
     if len(s) <= 3:
@@ -70,11 +69,10 @@ def format_indian_number(number):
             parts.append(remaining)
         return ','.join(reversed(parts)) + ',' + last3
 
-# --- Beautiful User Overview ---
+# --- User Overview ---
 total_posts = filtered["URL"].nunique()
 total_likes = filtered["Likes"].sum()
 total_comments = filtered["Comments"].notna().sum()
-
 formatted_posts = format_indian_number(total_posts)
 formatted_likes = format_indian_number(total_likes)
 formatted_comments = format_indian_number(total_comments)
@@ -117,7 +115,7 @@ for url, post_group in filtered.groupby("URL"):
     likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
     total_post_comments = comments_only.shape[0]
 
-    # Sentiment per post (from comments only)
+    # Sentiment per post
     sentiment_counts_post = comments_only["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
     pos_pct_post = sentiment_counts_post.get("Positive", 0.0)
     neg_pct_post = sentiment_counts_post.get("Negative", 0.0)
@@ -130,69 +128,27 @@ for url, post_group in filtered.groupby("URL"):
     summary_list.append({
         "Post": caption_text,
         "URL": url,
-        "Likes": likes,
-        "Total Comments": total_post_comments,
+        "Likes": format_indian_number(likes),
+        "Total Comments": format_indian_number(total_post_comments),
         "Overall Sentiment": overall_sentiment,
-        "Positive (%)": pos_pct_post,
-        "Negative (%)": neg_pct_post,
-        "Neutral (%)": neu_pct_post
+        "Positive (%)": f"{pos_pct_post:.1f}%",
+        "Negative (%)": f"{neg_pct_post:.1f}%",
+        "Neutral (%)": f"{neu_pct_post:.1f}%"
     })
 
 summary_df = pd.DataFrame(summary_list)
-summary_df = summary_df.sort_values(by="Likes", ascending=False)
+summary_df = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)
 
-# --- Interactive Table with AgGrid ---
-gb = GridOptionsBuilder.from_dataframe(summary_df)
-gb.configure_pagination(paginationAutoPageSize=True)
-gb.configure_default_column(editable=False, groupable=True, filter=True, sortable=True, resizable=True)
-gb.configure_selection(selection_mode="single", use_checkbox=True)
-gb.configure_grid_options(domLayout='normal')
-grid_options = gb.build()
+# --- Beautiful Posts Table ---
+st.markdown("## 📝 Posts Summary")
+def make_clickable(url):
+    return f'<a href="{url}" target="_blank">View Post</a>'
 
-st.markdown("## Posts Summary")
-AgGrid(
-    summary_df,
-    gridOptions=grid_options,
-    height=400,
-    width='100%',
-    data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-    update_mode=GridUpdateMode.NO_UPDATE,
-    fit_columns_on_grid_load=True
+summary_df["URL"] = summary_df["URL"].apply(make_clickable)
+summary_df = summary_df[["Post","URL","Likes","Total Comments","Overall Sentiment","Positive (%)","Negative (%)","Neutral (%)"]]
+
+st.write(
+    summary_df.to_html(escape=False, index=False), 
+    unsafe_allow_html=True
 )
 st.markdown("---")
-
-# --- Display posts section-wise by URL, sorted by Likes ---
-urls_sorted = summary_df.sort_values(by="Likes", ascending=False)["URL"]
-
-for url in urls_sorted:
-    post_group = filtered[filtered["URL"] == url]
-    comments_only = post_group[post_group["Comments"].notna()]
-
-    st.markdown(f"### 📌 [View Post]({url})")
-    
-    # Display caption
-    caption_row = post_group[post_group["Captions"].notna()]
-    if not caption_row.empty:
-        caption_row = caption_row.iloc[0]
-        st.subheader("Caption")
-        st.write(caption_row["Captions"])
-        st.write(f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} ❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))}")
-
-    # Display comments with sentiment
-    if not comments_only.empty:
-        st.subheader("Comments")
-        for _, row in comments_only.iterrows():
-            comment_text = row["Comments"]
-            sentiment_label = row.get("Sentiment_Label", "")
-            sentiment_score = row.get("Sentiment_Score", "")
-            st.write(f"- 💬 {comment_text} ({sentiment_label}: {sentiment_score})")
-
-    # Display sentiment summary from table variables
-    sentiment_row = summary_df[summary_df["URL"] == url].iloc[0]
-    st.write(
-        f"Sentiment Summary: 🙂 Positive: {sentiment_row['Positive (%)']:.1f}% | "
-        f"😡 Negative: {sentiment_row['Negative (%)']:.1f}% | "
-        f"😐 Neutral: {sentiment_row['Neutral (%)']:.1f}%"
-    )
-
-    st.markdown("---")
