@@ -100,7 +100,7 @@ with col4:
     st.write(f"💬 **Total Comments:** {formatted_comments}")
 with col5:
     st.markdown(
-        f"**Sentiment:**  \n"
+        f"**Overall Sentiment:**  \n"
         f"🙂 Positive: {pos_pct:.1f}%  \n"
         f"😡 Negative: {neg_pct:.1f}%  \n"
         f"😐 Neutral: {neu_pct:.1f}%"
