@@ -5,7 +5,7 @@ import pandas as pd
 try:
     df = pd.read_csv("data/sentiments.csv", parse_dates=["Date"])
 except FileNotFoundError:
-    st.error("CSV file not found! Make sure 'data/posts.csv' exists.")
+    st.error("CSV file not found! Make sure 'data/sentiments.csv' exists.")
     st.stop()
 except pd.errors.EmptyDataError:
     st.error("CSV file is empty! Please provide a valid CSV with data.")
@@ -98,23 +98,30 @@ for url, post_group in filtered.groupby("URL"):
         caption_row = caption_row.iloc[0]
         caption_text = caption_row["Captions"]
         likes = caption_row["Likes"]
-        sentiment_label = caption_row.get("Sentiment_Label", "")
-        sentiment_score = caption_row.get("Sentiment_Score", "")
     else:
         caption_text = ""
         likes = 0
-        sentiment_label = ""
-        sentiment_score = ""
     
     total_post_comments = post_group["Comments"].notna().sum()
-    
+
+    # --- Sentiment calculation ---
+    sentiment_counts = post_group["Sentiment_Label"].value_counts(normalize=True) * 100
+    pos_pct = sentiment_counts.get("Positive", 0)
+    neg_pct = sentiment_counts.get("Negative", 0)
+    neu_pct = sentiment_counts.get("Neutral", 0)
+
+    # Pick the label with maximum %
+    overall_sentiment = max(
+        [("Positive", pos_pct), ("Negative", neg_pct), ("Neutral", neu_pct)],
+        key=lambda x: x[1]
+    )[0]
+
     summary_list.append({
         "Post": caption_text,
-        "URL": url,  # URL clickable in dataframe
-        "Likes": likes,  # keep numeric for sorting
+        "URL": url,
+        "Likes": likes,
         "Total Comments": total_post_comments,
-        "Sentiment Label": sentiment_label,
-        "Sentiment Score": sentiment_score
+        "Overall Sentiment": overall_sentiment
     })
 
 summary_df = pd.DataFrame(summary_list)
@@ -132,8 +139,8 @@ st.markdown("---")
 
 # --- Display posts section-wise by URL, sorted by Likes ---
 urls_sorted = summary_df.sort_values(
-    by="Likes",
-    key=lambda x: x.str.replace(",", "").astype(int),
+    by="Likes", 
+    key=lambda x: x.str.replace(",", "").astype(int), 
     ascending=False
 )["URL"]
 
@@ -141,24 +148,30 @@ for url in urls_sorted:
     post_group = filtered[filtered["URL"] == url]
     st.markdown(f"### 📌 [View Post]({url})")
     
-    # Display caption (first row where Captions is not empty)
+    # Display caption
     caption_row = post_group[post_group["Captions"].notna()]
     if not caption_row.empty:
         caption_row = caption_row.iloc[0]
         st.subheader("Caption")
         st.write(caption_row["Captions"])
         st.write(
-            f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} "
-            f"❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))} "
-            f"🧾 Sentiment: {caption_row.get('Sentiment_Label', '')} "
-            f"({caption_row.get('Sentiment_Score', '')})"
+            f"📅 {caption_row['Date'].date()} 🕒 {caption_row['Time']} ❤️ Likes: {format_indian_number(caption_row.get('Likes', 0))}"
         )
 
-    # Display comments (rows where Comments is not empty)
+    # Display comments
     comments = post_group[post_group["Comments"].notna()]["Comments"].tolist()
     if comments:
         st.subheader("Comments")
         for c in comments:
             st.write(f"- 💬 {c}")
+
+    # Sentiment distribution
+    sentiment_counts = post_group["Sentiment_Label"].value_counts(normalize=True) * 100
+    pos_pct = sentiment_counts.get("Positive", 0)
+    neg_pct = sentiment_counts.get("Negative", 0)
+    neu_pct = sentiment_counts.get("Neutral", 0)
+    
+    st.subheader("Sentiment Overview")
+    st.write(f"🙂 Positive: {pos_pct:.1f}% | 😡 Negative: {neg_pct:.1f}% | 😐 Neutral: {neu_pct:.1f}%")
 
     st.markdown("---")
