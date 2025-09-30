@@ -5,7 +5,7 @@ import pandas as pd
 df = pd.read_csv("data/sentiments.csv")
 
 # Ensure necessary columns exist
-required_cols = ["Caption", "URL", "Likes", "Comments", "Sentiment_Label", "Sentiment_Score"]
+required_cols = ["Captions", "URL", "Likes", "Comments", "Sentiment_Label", "Sentiment_Score"]
 missing_cols = [col for col in required_cols if col not in df.columns]
 if missing_cols:
     st.error(f"Missing columns in CSV: {missing_cols}")
