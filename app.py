@@ -87,12 +87,13 @@ st.markdown("---")
 st.markdown("## Posts Summary")
 
 table_html = """
+<div style="overflow-x:auto;">
 <table style="width:100%; border-collapse: collapse;">
 <tr>
-<th style="border: 1px solid black; padding: 8px;">Post</th>
-<th style="border: 1px solid black; padding: 8px;">URL</th>
-<th style="border: 1px solid black; padding: 8px;">Likes</th>
-<th style="border: 1px solid black; padding: 8px;">Total Comments</th>
+<th style="border: 1px solid black; padding: 8px; text-align:left;">Post</th>
+<th style="border: 1px solid black; padding: 8px; text-align:left;">URL</th>
+<th style="border: 1px solid black; padding: 8px; text-align:left;">Likes</th>
+<th style="border: 1px solid black; padding: 8px; text-align:left;">Total Comments</th>
 </tr>
 """
 
@@ -104,14 +105,14 @@ for url, post_group in filtered.groupby("URL"):
     
     table_html += f"""
     <tr>
-    <td style="border: 1px solid black; padding: 8px; word-wrap: break-word;">{caption_text}</td>
+    <td style="border: 1px solid black; padding: 8px; word-wrap: break-word; max-width:400px;">{caption_text}</td>
     <td style="border: 1px solid black; padding: 8px;"><a href="{url}" target="_blank">Click URL</a></td>
     <td style="border: 1px solid black; padding: 8px;">{format_indian_number(likes)}</td>
     <td style="border: 1px solid black; padding: 8px;">{format_indian_number(total_post_comments)}</td>
     </tr>
     """
 
-table_html += "</table>"
+table_html += "</table></div>"
 
 st.markdown(table_html, unsafe_allow_html=True)
 st.markdown("---")
