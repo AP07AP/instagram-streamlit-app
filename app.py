@@ -53,9 +53,13 @@ total_likes = filtered[filtered["Captions"].notna()]["Likes"].sum()
 total_comments = filtered["Comments"].notna().sum()
 
 st.markdown("## User Overview")
-st.write(f"**Name:** {selected_user}")
+
+# Name as clickable link
 if profile_url:
-    st.markdown(f"**Profile:** [Link]({profile_url})")
+    st.markdown(f"**Name:** [{selected_user}]({profile_url})")
+else:
+    st.write(f"**Name:** {selected_user}")
+
 st.write(f"**Total Posts:** {total_posts}  |  **Total Likes:** {total_likes}  |  **Total Comments:** {total_comments}")
 st.markdown("---")
 
