@@ -3,7 +3,7 @@ import pandas as pd
 
 # --- Load dataset ---
 try:
-    df = pd.read_csv("data/insta_posts.csv", parse_dates=["Date"])
+    df = pd.read_csv("data/sentiments.csv", parse_dates=["Date"])
 except FileNotFoundError:
     st.error("CSV file not found! Make sure 'data/posts.csv' exists.")
     st.stop()
