@@ -90,9 +90,7 @@ else:
 st.write(f"**Total Posts:** {formatted_posts}  |  **Total Likes:** {formatted_likes}  |  **Total Comments:** {formatted_comments}")
 st.markdown("---")
 
-# --- Posts Summary Table (simple, clickable URL) ---
-st.markdown("## Posts Summary")
-
+# --- Prepare Posts Summary Table ---
 summary_list = []
 for url, post_group in filtered.groupby("URL"):
     caption_row = post_group[post_group["Captions"].notna()]
@@ -102,17 +100,35 @@ for url, post_group in filtered.groupby("URL"):
     
     summary_list.append({
         "Post": caption_text,
-        "URL": url,  # URL is clickable in st.dataframe
-        "Likes": format_indian_number(likes),
-        "Total Comments": format_indian_number(total_post_comments)
+        "URL": url,  # URL clickable in dataframe
+        "Likes": likes,  # keep numeric for sorting
+        "Total Comments": total_post_comments
     })
 
 summary_df = pd.DataFrame(summary_list)
+# --- Sort by Likes descending ---
+summary_df = summary_df.sort_values(by="Likes", ascending=False)
+# Format Likes and Total Comments in Indian format
+summary_df["Likes"] = summary_df["Likes"].apply(format_indian_number)
+summary_df["Total Comments"] = summary_df["Total Comments"].apply(format_indian_number)
+
+st.markdown("## Posts Summary")
 st.dataframe(summary_df, use_container_width=True)
 st.markdown("---")
 
-# --- Display posts section-wise by URL ---
+# --- Display posts section-wise by URL, sorted by Likes ---
 for url, post_group in filtered.groupby("URL"):
+    # get likes for this post
+    caption_row = post_group[post_group["Captions"].notna()]
+    likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
+    post_group = post_group.copy()
+    post_group["Post_Likes"] = likes
+
+# sort URLs by likes
+urls_sorted = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)["URL"]
+
+for url in urls_sorted:
+    post_group = filtered[filtered["URL"] == url]
     st.markdown(f"### 📌 [View Post]({url})")
     
     # Display caption (first row where Captions is not empty)
