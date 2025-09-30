@@ -145,7 +145,7 @@ st.dataframe(
     summary_df.style.set_properties(**{
         'white-space': 'pre-wrap',   # wrap text in Post column
         'text-align': 'left'
-    }).hide_index(),
+    }),
     height=500
 )
 st.markdown("---")
