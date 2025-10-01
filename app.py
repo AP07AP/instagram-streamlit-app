@@ -164,3 +164,63 @@ else:
     st.write("Select one or more posts from the dropdown to see comments.")
 
  # below
+import io
+
+# --- Prepare Excel file for download ---
+if selected_posts:
+    excel_rows = []
+    for post_url in selected_posts:
+        post_group = filtered[filtered["URL"] == post_url]
+
+        # Get caption row
+        caption_row = post_group[post_group["Captions"].notna()]
+        if not caption_row.empty:
+            caption_text = caption_row.iloc[0]["Captions"]
+            post_date = caption_row.iloc[0]["Date"].date()
+            post_time = caption_row.iloc[0]["Time"]
+            likes = caption_row.iloc[0]["Likes"]
+        else:
+            caption_text = ""
+            post_date = ""
+            post_time = ""
+            likes = 0
+
+        comments_only = post_group[post_group["Comments"].notna()]
+
+        if not comments_only.empty:
+            for i, (_, row) in enumerate(comments_only.iterrows()):
+                excel_rows.append({
+                    "URL": post_url,
+                    "Date": post_date,
+                    "Time": post_time,
+                    "Caption": caption_text if i == 0 else "",
+                    "Likes": likes if i == 0 else "",
+                    "Comments": row["Comments"]
+                })
+        else:
+            # No comments, still add a row with caption
+            excel_rows.append({
+                "URL": post_url,
+                "Date": post_date,
+                "Time": post_time,
+                "Caption": caption_text,
+                "Likes": likes,
+                "Comments": ""
+            })
+
+    excel_df = pd.DataFrame(excel_rows)
+
+    # Convert to Excel in-memory
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        excel_df.to_excel(writer, index=False, sheet_name='Instagram_Posts')
+        writer.save()
+    output.seek(0)
+
+    # Download button with username as file name
+    st.download_button(
+        label="📥 Download Selected Posts Data as Excel",
+        data=output,
+        file_name=f"{selected_user}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
