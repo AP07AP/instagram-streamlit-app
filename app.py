@@ -210,11 +210,10 @@ if selected_posts:
 
     excel_df = pd.DataFrame(excel_rows)
 
-    # Convert to Excel in-memory
+    # Convert to Excel in-memory using xlsxwriter
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         excel_df.to_excel(writer, index=False, sheet_name='Instagram_Posts')
-        writer.save()
     output.seek(0)
 
     # Download button with username as file name
