@@ -125,7 +125,7 @@ post_options = filtered["URL"].unique().tolist()
 selected_posts = st.multiselect(
     "Select Posts",
     options=post_options,
-    default=post_options  # all posts selected by default
+    default=[]  # start with empty selection
 )
 
 # Filter comments for selected posts
