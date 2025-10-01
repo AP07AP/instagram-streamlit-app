@@ -130,13 +130,7 @@ selected_posts = st.multiselect(
     options=post_options,
     default=post_options if select_all else []
 )
-# Download button with username as file name
-    st.download_button(
-        label="📥 Download Selected Posts Data as Excel",
-        data=output,
-        file_name=f"{selected_user}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+
 
 if selected_posts:
     for post_url in selected_posts:
@@ -221,4 +215,10 @@ if selected_posts:
         excel_df.to_excel(writer, index=False, sheet_name='Instagram_Posts')
     output.seek(0)
 
-    
+# Download button with username as file name
+st.download_button(
+    label="📥 Download Selected Posts Data as Excel",
+    data=output,
+    file_name=f"{selected_user}.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
