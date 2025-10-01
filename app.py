@@ -55,19 +55,6 @@ filtered = user_data[
     (user_data["Time"] <= time_range[1])
 ]
 
-# --- Post filter (dropdown with checkboxes) ---
-st.markdown("### 📝 Select Posts to Display")
-post_options = filtered["Captions"].fillna("No Caption").tolist()
-selected_posts = st.multiselect(
-    "Select Posts",
-    options=post_options,
-    default=post_options  # all selected by default
-)
-
-# --- Apply post filter ---
-if selected_posts:
-    filtered = filtered[filtered["Captions"].fillna("No Caption").isin(selected_posts)]
-
 # --- Function to format number in Indian style ---
 def format_indian_number(number):
     s = str(int(number))
@@ -103,7 +90,7 @@ neu_pct = sentiment_counts.get("Neutral", 0.0)
 st.markdown("## User Overview")
 col1, col2, col3, col4, col5 = st.columns([2,1,1,1,2])
 with col1:
-    img_path = f"images/{selected_user}.jpg"  # Assuming images are in 'images/' folder
+    img_path = f"{selected_user}.jpg"  # Assuming images are in 'images/' folder
     try:
         st.image(img_path, width=180, caption=f"[{selected_user}]({profile_url})" if profile_url else selected_user)
     except Exception:
@@ -125,6 +112,21 @@ with col5:
         f"😐 Neutral: {neu_pct:.1f}%"
     )
 st.markdown("---")
+
+# --- Post filter dropdown (after User Overview) ---
+st.markdown("### 📝 Select Post")
+post_options = filtered["URL"].unique().tolist()
+selected_post = st.selectbox("Select Post", post_options)
+
+# Filter data for the selected post
+post_comments = filtered[filtered["URL"] == selected_post][["Comments", "Sentiment_Label", "Sentiment_Score"]]
+
+# Display comments table
+st.markdown("## Comments for Selected Post")
+if not post_comments.empty:
+    st.dataframe(post_comments.reset_index(drop=True))
+else:
+    st.write("No comments available for this post.")
 
 # --- Prepare Posts Summary Table ---
 summary_list = []
