@@ -175,28 +175,30 @@ if not filtered.empty:
                     comments_only = post_group[post_group["Comments"].notna()].copy()
                     comments_only["Sentiment_Label"] = comments_only["Sentiment_Label"].astype(str).str.strip().str.title()
 
-                    # Sentiment Filter Dropdown per post
+                    # --- Static Sentiment Summary (all comments of this post) ---
+                    sentiment_counts_post = comments_only["Sentiment_Label"].value_counts(normalize=True) * 100
+                    st.markdown(
+                        f"**Sentiment Summary (All Comments):**  \n"
+                        f"🙂 Positive: {sentiment_counts_post.get('Positive', 0):.1f}% | "
+                        f"😡 Negative: {sentiment_counts_post.get('Negative', 0):.1f}% | "
+                        f"😐 Neutral: {sentiment_counts_post.get('Neutral', 0):.1f}%"
+                    )
+
+                    # --- Sentiment Filter Dropdown (filters only table) ---
                     sentiment_filter = st.selectbox(
                         "Filter comments by Sentiment", 
                         ["All", "Positive", "Negative", "Neutral"],
                         key=f"filter_{url}"
                     )
+
+                    filtered_comments = comments_only.copy()
                     if sentiment_filter != "All":
-                        comments_only = comments_only[comments_only["Sentiment_Label"] == sentiment_filter]
+                        filtered_comments = filtered_comments[filtered_comments["Sentiment_Label"] == sentiment_filter]
 
-                    if not comments_only.empty:
+                    if not filtered_comments.empty:
                         st.dataframe(
-                            comments_only[["Comments", "Sentiment_Label", "Sentiment_Score"]].reset_index(drop=True),
+                            filtered_comments[["Comments", "Sentiment_Label", "Sentiment_Score"]].reset_index(drop=True),
                             use_container_width=True
-                        )
-
-                        # Sentiment Summary
-                        sentiment_counts_post = comments_only["Sentiment_Label"].value_counts(normalize=True) * 100
-                        st.markdown(
-                            f"**Sentiment Summary:**  \n"
-                            f"🙂 Positive: {sentiment_counts_post.get('Positive', 0):.1f}% | "
-                            f"😡 Negative: {sentiment_counts_post.get('Negative', 0):.1f}% | "
-                            f"😐 Neutral: {sentiment_counts_post.get('Neutral', 0):.1f}%"
                         )
                     else:
                         st.info("No comments available for the selected filter.")
