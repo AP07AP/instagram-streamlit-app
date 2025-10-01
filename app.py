@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 
 # --- Load dataset ---
 try:
@@ -121,8 +122,11 @@ st.markdown("---")
 
 # --- Post filter dropdown with checkboxes (multiselect) ---
 st.markdown("### 📝 Select Posts")
-# "Select All" checkbox
-select_all = st.checkbox("Select All Posts")
+
+# --- Select All checkbox and Download button side by side ---
+col1, col2 = st.columns([1, 2])
+with col1:
+    select_all = st.checkbox("Select All Posts")
 
 post_options = filtered["URL"].unique().tolist()
 selected_posts = st.multiselect(
@@ -131,47 +135,8 @@ selected_posts = st.multiselect(
     default=post_options if select_all else []
 )
 
-if selected_posts:
-    for post_url in selected_posts:
-        post_group = filtered[filtered["URL"] == post_url]
-
-        # Get caption row (first row with a caption)
-        caption_row = post_group[post_group["Captions"].notna()]
-        if not caption_row.empty:
-            caption_row = caption_row.iloc[0]
-            caption_text = caption_row["Captions"]
-            post_date = caption_row["Date"].date()
-            post_time = caption_row["Time"]
-            likes = format_indian_number(caption_row.get("Likes", 0))
-        else:
-            caption_text = ""
-            post_date = ""
-            post_time = ""
-            likes = 0
-
-        # --- Display Post Header ---
-        st.markdown(f"📌 [View Post]({post_url})")
-        st.write("**Caption:**")
-        st.write(caption_text)
-        st.write(f"📅 {post_date} 🕒 {post_time} ❤️ Likes: {likes}")
-
-        # --- Display comments table ---
-        post_comments = post_group[post_group["Comments"].notna()][["Comments", "Sentiment_Label", "Sentiment_Score"]]
-        if not post_comments.empty:
-            st.dataframe(post_comments.reset_index(drop=True))
-        else:
-            st.write("No comments available for this post.")
-
-        st.markdown("---")  # separator between posts
-else:
-    st.write("Select one or more posts from the dropdown to see comments.")
-
- # below
-import io
-
 # --- Prepare wide-format Excel file for download ---
 if selected_posts:
-    import io
     excel_rows = []
     for post_url in selected_posts:
         post_group = filtered[filtered["URL"] == post_url]
@@ -215,10 +180,47 @@ if selected_posts:
         excel_df.to_excel(writer, index=False, sheet_name='Instagram_Posts')
     output.seek(0)
 
-    # Download button with username as file name
-    st.download_button(
-        label="📥 Download Selected Posts Data as Excel",
-        data=output,
-        file_name=f"{selected_user}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    # Show Download button next to Select All checkbox
+    with col2:
+        st.download_button(
+            label="📥 Download Selected Posts Data as Excel",
+            data=output,
+            file_name=f"{selected_user}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+# --- Display posts and comments ---
+if selected_posts:
+    for post_url in selected_posts:
+        post_group = filtered[filtered["URL"] == post_url]
+
+        # Get caption row (first row with a caption)
+        caption_row = post_group[post_group["Captions"].notna()]
+        if not caption_row.empty:
+            caption_row = caption_row.iloc[0]
+            caption_text = caption_row["Captions"]
+            post_date = caption_row["Date"].date()
+            post_time = caption_row["Time"]
+            likes = format_indian_number(caption_row.get("Likes", 0))
+        else:
+            caption_text = ""
+            post_date = ""
+            post_time = ""
+            likes = 0
+
+        # --- Display Post Header ---
+        st.markdown(f"📌 [View Post]({post_url})")
+        st.write("**Caption:**")
+        st.write(caption_text)
+        st.write(f"📅 {post_date} 🕒 {post_time} ❤️ Likes: {likes}")
+
+        # --- Display comments table ---
+        post_comments = post_group[post_group["Comments"].notna()][["Comments", "Sentiment_Label", "Sentiment_Score"]]
+        if not post_comments.empty:
+            st.dataframe(post_comments.reset_index(drop=True))
+        else:
+            st.write("No comments available for this post.")
+
+        st.markdown("---")  # separator between posts
+else:
+    st.write("Select one or more posts from the dropdown to see comments.")
