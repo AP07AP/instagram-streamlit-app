@@ -119,6 +119,21 @@ with col5:
     )
 st.markdown("---")
 
+# --- Post filter dropdown (after User Overview) ---
+st.markdown("### 📝 Select Post")
+post_options = filtered["URL"].unique().tolist()
+selected_post = st.selectbox("Select Post", post_options)
+
+# Filter data for the selected post
+post_comments = filtered[filtered["URL"] == selected_post][["Comments", "Sentiment_Label", "Sentiment_Score"]]
+
+# Display comments table
+st.markdown("## Comments for Selected Post")
+if not post_comments.empty:
+    st.dataframe(post_comments.reset_index(drop=True))
+else:
+    st.write("No comments available for this post.")
+
 # --- Prepare Posts Summary Table ---
 summary_list = []
 for url, post_group in filtered.groupby("URL"):
