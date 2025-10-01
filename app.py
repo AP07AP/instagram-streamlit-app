@@ -27,17 +27,24 @@ df["Time"] = pd.to_datetime(df["Time"], format='%H:%M:%S', errors="coerce").dt.t
 st.title("📊 Instagram Posts Dashboard")
 
 # ===============================
+# ===============================
 # Username Filter
 # ===============================
 st.markdown("### 👤 Username")
-usernames = df["username"].dropna().unique()
-selected_user = st.selectbox("Select Username", usernames)
+
+# Replace dropdown with text input
+selected_user = st.text_input("Enter Username")
+
+if not selected_user:
+    st.warning("Please enter a username to continue.")
+    st.stop()
 
 user_data = df[df["username"] == selected_user].copy()
 
 # Extract profile URL
 first_post_url = user_data["URL"].iloc[0] if not user_data.empty else ""
 profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
+
 
 # ===============================
 # Date & Time Filter
