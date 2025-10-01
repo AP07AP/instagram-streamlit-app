@@ -19,7 +19,7 @@ df["Likes"] = pd.to_numeric(df["Likes"], errors="coerce").fillna(0)
 st.title("📊 Instagram Posts Dashboard")
 
 # --- Username filter ---
-st.markdown("### 👤 Select Username")
+st.markdown("### 👤 Username")
 usernames = df["username"].unique()
 selected_user = st.selectbox("Select Username", usernames)
 user_data = df[df["username"] == selected_user]
