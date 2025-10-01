@@ -143,44 +143,7 @@ with col5:
 st.markdown("---")
 
 # ===============================
-# Posts Summary Table
-# ===============================
-summary_list = []
-for url, post_group in filtered.groupby("URL"):
-    comments_only = post_group[post_group["Comments"].notna()]
-    caption_row = post_group[post_group["Captions"].notna()]
-    caption_text = caption_row.iloc[0]["Captions"] if not caption_row.empty else ""
-    likes = caption_row.iloc[0]["Likes"] if not caption_row.empty else 0
-    total_post_comments = comments_only.shape[0]
 
-    # Sentiment per post
-    sentiment_counts_post = comments_only["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
-    pos_pct_post = sentiment_counts_post.get("Positive", 0.0)
-    neg_pct_post = sentiment_counts_post.get("Negative", 0.0)
-    neu_pct_post = sentiment_counts_post.get("Neutral", 0.0)
-    sentiment_dict = {"Positive": pos_pct_post, "Negative": neg_pct_post, "Neutral": neu_pct_post}
-    max_label = max(sentiment_dict, key=sentiment_dict.get)
-    max_pct = sentiment_dict[max_label]
-    overall_sentiment = f"{max_label} ({max_pct:.1f}%)"
-
-    summary_list.append({
-        "Post": caption_text,
-        "URL": url,
-        "Likes": format_indian_number(likes),
-        "Total Comments": format_indian_number(total_post_comments),
-        "Overall Sentiment": overall_sentiment,
-        "Positive (%)": f"{pos_pct_post:.1f}%",
-        "Negative (%)": f"{neg_pct_post:.1f}%",
-        "Neutral (%)": f"{neu_pct_post:.1f}%"
-    })
-
-summary_df = pd.DataFrame(summary_list)
-if not summary_df.empty:
-    summary_df = summary_df.sort_values(by="Likes", key=lambda x: x.str.replace(",", "").astype(int), ascending=False)
-
-st.markdown("## Posts Summary")
-st.dataframe(summary_df, use_container_width=True)
-st.markdown("---")
 
 # ===============================
 # Drill-down Explorer
