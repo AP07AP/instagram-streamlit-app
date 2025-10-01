@@ -166,7 +166,7 @@ else:
  # below
 import io
 
-# --- Prepare Excel file for download ---
+# --- Prepare wide-format Excel file for download ---
 if selected_posts:
     excel_rows = []
     for post_url in selected_posts:
@@ -185,32 +185,27 @@ if selected_posts:
             post_time = ""
             likes = 0
 
+        # Prepare post dictionary
+        post_dict = {
+            "URL": post_url,
+            "Date": post_date,
+            "Time": post_time,
+            "Likes": likes,
+            "Caption": caption_text
+        }
+
+        # Add comments dynamically
         comments_only = post_group[post_group["Comments"].notna()]
+        for i, (_, row) in enumerate(comments_only.iterrows(), start=1):
+            post_dict[f"Comment_{i}"] = row["Comments"]
+            post_dict[f"Sentiment_Comment_{i}"] = row.get("Sentiment_Label", "")
 
-        if not comments_only.empty:
-            for i, (_, row) in enumerate(comments_only.iterrows()):
-                excel_rows.append({
-                    "URL": post_url,
-                    "Date": post_date,
-                    "Time": post_time,
-                    "Caption": caption_text if i == 0 else "",
-                    "Likes": likes if i == 0 else "",
-                    "Comments": row["Comments"]
-                })
-        else:
-            # No comments, still add a row with caption
-            excel_rows.append({
-                "URL": post_url,
-                "Date": post_date,
-                "Time": post_time,
-                "Caption": caption_text,
-                "Likes": likes,
-                "Comments": ""
-            })
+        excel_rows.append(post_dict)
 
+    # Convert to DataFrame
     excel_df = pd.DataFrame(excel_rows)
 
-    # Convert to Excel in-memory using xlsxwriter
+    # Convert to Excel in-memory
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         excel_df.to_excel(writer, index=False, sheet_name='Instagram_Posts')
