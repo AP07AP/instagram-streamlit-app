@@ -29,182 +29,187 @@ st.title("📊 Instagram Posts Dashboard")
 # ===============================
 # Username Input
 # ===============================
-st.markdown("### 👤 Username")
-selected_user = st.text_input("Enter Username")
+st.markdown("### 👤 Enter Username")
+selected_user = st.text_input("Enter Instagram Username").strip()
 
-if selected_user:
-    user_data = df[df["username"] == selected_user].copy()
+# Initialize session state for "Get Report"
+if "show_report" not in st.session_state:
+    st.session_state.show_report = False
 
-    # Extract profile URL
-    first_post_url = user_data["URL"].iloc[0] if not user_data.empty else ""
-    profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
+# ===============================
+# Date Selection
+# ===============================
+from_date = st.date_input("From", value=None)
+to_date = st.date_input("To", value=None)
 
-    # ===============================
-    # Date & Time Filter
-    # ===============================
-    st.markdown("### 📅 Date & Time")
-
-    if not user_data.empty:
-        min_date, max_date = user_data["Date"].min().date(), user_data["Date"].max().date()
+# ===============================
+# Get Report Button
+# ===============================
+if st.button("📑 Get Report"):
+    if not selected_user:
+        st.warning("Please enter a username.")
+    elif not from_date or not to_date:
+        st.warning("Please select both start and end dates.")
     else:
-        min_date, max_date = pd.to_datetime("today").date(), pd.to_datetime("today").date()
+        st.session_state.show_report = True
 
-    col1, col2 = st.columns(2)
-    with col1:
-        from_date = st.date_input("From", value=None, min_value=min_date, max_value=max_date)
-    with col2:
-        to_date = st.date_input("To", value=None, min_value=min_date, max_value=max_date)
+# ===============================
+# Display Report
+# ===============================
+if st.session_state.show_report:
+    # Filter user data
+    user_data = df[df["username"] == selected_user].copy()
+    if user_data.empty:
+        st.warning(f"No data found for user: {selected_user}")
+    else:
+        profile_url = ""
+        first_post_url = user_data["URL"].iloc[0] if not user_data.empty else ""
+        profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
 
-    min_time, max_time = user_data["Time"].min(), user_data["Time"].max()
-    time_range = st.slider(
-        "Select Time Range",
-        min_value=min_time,
-        max_value=max_time,
-        value=(min_time, max_time)
-    )
+        # Apply date & time filters
+        filtered = user_data[
+            (user_data["Date"] >= pd.to_datetime(from_date)) &
+            (user_data["Date"] <= pd.to_datetime(to_date))
+        ]
 
-    # ===============================
-    # Show Report Button
-    # ===============================
-    if st.button("📑 Get Report"):
-        if not from_date or not to_date:
-            st.warning("Please select both start and end dates.")
-        else:
-            # ===============================
-            # Apply Filters
-            # ===============================
-            filtered = user_data[
-                (user_data["Date"] >= pd.to_datetime(from_date)) &
-                (user_data["Date"] <= pd.to_datetime(to_date)) &
-                (user_data["Time"] >= time_range[0]) &
-                (user_data["Time"] <= time_range[1])
-            ]
+        min_time, max_time = filtered["Time"].min(), filtered["Time"].max()
+        time_range = st.slider(
+            "Select Time Range",
+            min_value=min_time,
+            max_value=max_time,
+            value=(min_time, max_time)
+        )
 
-            # ===============================
-            # Number Formatting (Indian style)
-            # ===============================
-            def format_indian_number(number):
-                try:
-                    s = str(int(number))
-                except:
-                    return "0"
-                if len(s) <= 3:
-                    return s
+        filtered = filtered[
+            (filtered["Time"] >= time_range[0]) &
+            (filtered["Time"] <= time_range[1])
+        ]
+
+        # -------------------------------
+        # Number Formatting (Indian style)
+        # -------------------------------
+        def format_indian_number(number):
+            try:
+                s = str(int(number))
+            except:
+                return "0"
+            if len(s) <= 3:
+                return s
+            else:
+                last3 = s[-3:]
+                remaining = s[:-3]
+                parts = []
+                while len(remaining) > 2:
+                    parts.append(remaining[-2:])
+                    remaining = remaining[:-2]
+                if remaining:
+                    parts.append(remaining)
+                return ','.join(reversed(parts)) + ',' + last3
+
+        # -------------------------------
+        # User Overview
+        # -------------------------------
+        total_posts = filtered["URL"].nunique()
+        total_likes = filtered["Likes"].sum()
+        total_comments = filtered["Comments"].notna().sum()
+
+        formatted_posts = format_indian_number(total_posts)
+        formatted_likes = format_indian_number(total_likes)
+        formatted_comments = format_indian_number(total_comments)
+
+        # Sentiment overview
+        all_comments = filtered[filtered["Comments"].notna()]
+        sentiment_counts = (
+            all_comments["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
+        )
+        pos_pct = sentiment_counts.get("Positive", 0.0)
+        neg_pct = sentiment_counts.get("Negative", 0.0)
+        neu_pct = sentiment_counts.get("Neutral", 0.0)
+
+        st.markdown("## User Overview")
+        col1, col2, col3, col4, col5 = st.columns([2,1,1,1,2])
+        with col1:
+            img_path = f"{selected_user}.jpg"
+            try:
+                st.image(img_path, width=180, caption=f"[{selected_user}]({profile_url})" if profile_url else selected_user)
+            except Exception:
+                if profile_url:
+                    st.markdown(f"**Name:** [{selected_user}]({profile_url})")
                 else:
-                    last3 = s[-3:]
-                    remaining = s[:-3]
-                    parts = []
-                    while len(remaining) > 2:
-                        parts.append(remaining[-2:])
-                        remaining = remaining[:-2]
-                    if remaining:
-                        parts.append(remaining)
-                    return ','.join(reversed(parts)) + ',' + last3
+                    st.markdown(f"**Name:** {selected_user}")
 
-            # ===============================
-            # User Overview
-            # ===============================
-            total_posts = filtered["URL"].nunique()
-            total_likes = filtered["Likes"].sum()
-            total_comments = filtered["Comments"].notna().sum()
-
-            formatted_posts = format_indian_number(total_posts)
-            formatted_likes = format_indian_number(total_likes)
-            formatted_comments = format_indian_number(total_comments)
-
-            # Sentiment overview
-            all_comments = filtered[filtered["Comments"].notna()]
-            sentiment_counts = (
-                all_comments["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
+        with col2:
+            st.write(f"📄 **Total Posts:** {formatted_posts}")
+        with col3:
+            st.write(f"❤️ **Total Likes:** {formatted_likes}")
+        with col4:
+            st.write(f"💬 **Total Comments:** {formatted_comments}")
+        with col5:
+            st.markdown(
+                f"**Overall Sentiment:**  \n"
+                f"🙂 Positive: {pos_pct:.1f}%  \n"
+                f"😡 Negative: {neg_pct:.1f}%  \n"
+                f"😐 Neutral: {neu_pct:.1f}%"
             )
-            pos_pct = sentiment_counts.get("Positive", 0.0)
-            neg_pct = sentiment_counts.get("Negative", 0.0)
-            neu_pct = sentiment_counts.get("Neutral", 0.0)
 
-            st.markdown("## User Overview")
-            col1, col2, col3, col4, col5 = st.columns([2,1,1,1,2])
-            with col1:
-                img_path = f"{selected_user}.jpg"
-                try:
-                    st.image(img_path, width=180, caption=f"[{selected_user}]({profile_url})" if profile_url else selected_user)
-                except Exception:
-                    if profile_url:
-                        st.markdown(f"**Name:** [{selected_user}]({profile_url})")
-                    else:
-                        st.markdown(f"**Name:** {selected_user}")
+        st.markdown("---")
 
-            with col2:
-                st.write(f"📄 **Total Posts:** {formatted_posts}")
-            with col3:
-                st.write(f"❤️ **Total Likes:** {formatted_likes}")
-            with col4:
-                st.write(f"💬 **Total Comments:** {formatted_comments}")
-            with col5:
-                st.markdown(
-                    f"**Overall Sentiment:**  \n"
-                    f"🙂 Positive: {pos_pct:.1f}%  \n"
-                    f"😡 Negative: {neg_pct:.1f}%  \n"
-                    f"😐 Neutral: {neu_pct:.1f}%"
-                )
+        # ===============================
+        # Drill-down Explorer (Multiple URLs + Sentiment Filter)
+        # ===============================
+        st.markdown("## 📌 Explore Posts")
 
-            st.markdown("---")
+        if not filtered.empty:
+            selected_post_urls = st.multiselect(
+                "🔗 Select one or more Posts (URLs)",
+                filtered["URL"].unique().tolist()
+            )
 
-            # ===============================
-            # Drill-down Explorer
-            # ===============================
-            st.markdown("## 📌 Explore Posts")
+            if selected_post_urls:
+                multi_posts = filtered[filtered["URL"].isin(selected_post_urls)]
 
-            if not filtered.empty:
-                selected_post_urls = st.multiselect(
-                    "🔗 Select one or more Posts (URLs)",
-                    filtered["URL"].unique().tolist()
-                )
+                st.subheader("📝 Selected Posts Details")
+                for url in selected_post_urls:
+                    post_group = multi_posts[multi_posts["URL"] == url]
+                    caption_row = post_group[post_group["Captions"].notna()]
+                    if not caption_row.empty:
+                        row = caption_row.iloc[0]
+                        st.markdown(
+                            f"**Caption:** {row['Captions']}  \n"
+                            f"📅 {row['Date'].date()} 🕒 {row['Time']} ❤️ Likes: {format_indian_number(row['Likes'])}  \n"
+                            f"🔗 [View Post]({url})"
+                        )
 
-                if selected_post_urls:
-                    multi_posts = filtered[filtered["URL"].isin(selected_post_urls)]
-                    st.subheader("📝 Selected Posts Details")
+                        # Optional button to show sentiment split for this post
+                        show_sentiment = st.checkbox(f"Show Sentiment Split for this post?", key=f"sentiment_{url}")
+                        if show_sentiment:
+                            comments_only = post_group[post_group["Comments"].notna()].copy()
+                            comments_only["Sentiment_Label"] = comments_only["Sentiment_Label"].astype(str).str.strip().str.title()
 
-                    for url in selected_post_urls:
-                        post_group = multi_posts[multi_posts["URL"] == url]
-                        caption_row = post_group[post_group["Captions"].notna()]
-                        if not caption_row.empty:
-                            row = caption_row.iloc[0]
-                            st.markdown(
-                                f"**Caption:** {row['Captions']}  \n"
-                                f"📅 {row['Date'].date()} 🕒 {row['Time']} ❤️ Likes: {format_indian_number(row['Likes'])}  \n"
-                                f"🔗 [View Post]({url})"
+                            # Sentiment Filter Dropdown per post
+                            sentiment_filter = st.selectbox(
+                                "Filter comments by Sentiment", 
+                                ["All", "Positive", "Negative", "Neutral"],
+                                key=f"filter_{url}"
                             )
+                            if sentiment_filter != "All":
+                                comments_only = comments_only[comments_only["Sentiment_Label"] == sentiment_filter]
 
-                            # Sentiment Split
-                            show_sentiment = st.checkbox(f"Show Sentiment Split for this post?", key=f"sentiment_{url}")
-                            if show_sentiment:
-                                comments_only = post_group[post_group["Comments"].notna()].copy()
-                                comments_only["Sentiment_Label"] = comments_only["Sentiment_Label"].astype(str).str.strip().str.title()
-
-                                # Sentiment Filter Dropdown
-                                sentiment_filter = st.selectbox(
-                                    "Filter comments by Sentiment", 
-                                    ["All", "Positive", "Negative", "Neutral"],
-                                    key=f"filter_{url}"
+                            if not comments_only.empty:
+                                st.dataframe(
+                                    comments_only[["Comments", "Sentiment_Label", "Sentiment_Score"]].reset_index(drop=True),
+                                    use_container_width=True
                                 )
-                                if sentiment_filter != "All":
-                                    comments_only = comments_only[comments_only["Sentiment_Label"] == sentiment_filter]
 
-                                if not comments_only.empty:
-                                    st.dataframe(
-                                        comments_only[["Comments", "Sentiment_Label", "Sentiment_Score"]].reset_index(drop=True),
-                                        use_container_width=True
-                                    )
+                                # Keep sentiment summary **static** for all selected options
+                                sentiment_counts_post_all = post_group[post_group["Comments"].notna()]["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
+                                st.markdown(
+                                    f"**Sentiment Summary:**  \n"
+                                    f"🙂 Positive: {sentiment_counts_post_all.get('Positive', 0):.1f}% | "
+                                    f"😡 Negative: {sentiment_counts_post_all.get('Negative', 0):.1f}% | "
+                                    f"😐 Neutral: {sentiment_counts_post_all.get('Neutral', 0):.1f}%"
+                                )
+                            else:
+                                st.info("No comments available for the selected filter.")
 
-                                    # Sentiment Summary (always overall for that post, not filtered)
-                                    sentiment_counts_post = post_group[post_group["Comments"].notna()]["Sentiment_Label"].astype(str).str.strip().str.title().value_counts(normalize=True) * 100
-                                    st.markdown(
-                                        f"**Sentiment Summary:**  \n"
-                                        f"🙂 Positive: {sentiment_counts_post.get('Positive', 0):.1f}% | "
-                                        f"😡 Negative: {sentiment_counts_post.get('Negative', 0):.1f}% | "
-                                        f"😐 Neutral: {sentiment_counts_post.get('Neutral', 0):.1f}%"
-                                    )
-                                else:
-                                    st.info("No comments available for the selected filter.")
-
-                            st.markdown("---")
+                        st.markdown("---")
