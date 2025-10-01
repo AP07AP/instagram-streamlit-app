@@ -28,6 +28,7 @@ first_post_url = user_data["URL"].iloc[0] if not user_data.empty else ""
 profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
 
 # --- Date filter with From and To ---
+st.markdown("### 📅 Date")
 min_date, max_date = user_data["Date"].min(), user_data["Date"].max()
 col1, col2 = st.columns(2)
 with col1:
