@@ -119,17 +119,29 @@ with col5:
     )
 st.markdown("---")
 
-# --- Post filter multiselect dropdown ---
-st.markdown("### 📝 Select Posts")
-post_options = filtered["URL"].unique().tolist()
-selected_posts = st.multiselect(
-    "Select Posts",
-    options=post_options,
-    default=post_options  # all posts selected by default
-)
+# --- Initialize selected_posts in session_state ---
+if "selected_posts" not in st.session_state:
+    st.session_state.selected_posts = []
 
-# Filter data for the selected posts
-post_comments = filtered[filtered["URL"].isin(selected_posts)][["URL", "Comments", "Sentiment_Label", "Sentiment_Score"]]
+st.markdown("### 📝 Select Posts")
+
+# Dropdown to pick a post
+post_options = filtered["URL"].unique().tolist()
+chosen_post = st.selectbox("Select a post to add", post_options)
+
+# Checkbox to add/remove the selected post
+add_post = st.checkbox("Add to selection", key=chosen_post)
+
+if add_post and chosen_post not in st.session_state.selected_posts:
+    st.session_state.selected_posts.append(chosen_post)
+elif not add_post and chosen_post in st.session_state.selected_posts:
+    st.session_state.selected_posts.remove(chosen_post)
+
+# Show selected posts
+st.write("Selected Posts:", st.session_state.selected_posts)
+
+# Filter comments for selected posts
+post_comments = filtered[filtered["URL"].isin(st.session_state.selected_posts)][["URL","Comments","Sentiment_Label","Sentiment_Score"]]
 
 # Display comments table
 st.markdown("## Comments for Selected Post(s)")
@@ -137,6 +149,7 @@ if not post_comments.empty:
     st.dataframe(post_comments.reset_index(drop=True))
 else:
     st.write("No comments available for the selected post(s).")
+ # below
 
 summary_list = []
 for url, post_group in filtered.groupby("URL"):
