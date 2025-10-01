@@ -28,7 +28,7 @@ first_post_url = user_data["URL"].iloc[0] if not user_data.empty else ""
 profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
 
 # --- Date filter with From and To ---
-st.markdown("### 📅 Date")
+st.markdown("### 📅 Date & Time")
 
 # Ensure Date is in datetime format
 user_data["Date"] = pd.to_datetime(user_data["Date"], format="%d-%m-%Y", errors="coerce")
