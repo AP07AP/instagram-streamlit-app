@@ -121,11 +121,14 @@ st.markdown("---")
 
 # --- Post filter dropdown with checkboxes (multiselect) ---
 st.markdown("### 📝 Select Posts")
+# "Select All" checkbox
+select_all = st.checkbox("Select All Posts")
+
 post_options = filtered["URL"].unique().tolist()
 selected_posts = st.multiselect(
     "Select Posts",
     options=post_options,
-    default=[]  # start with empty selection
+    default=post_options if select_all else []
 )
 
 if selected_posts:
