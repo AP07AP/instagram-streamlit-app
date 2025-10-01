@@ -19,7 +19,7 @@ df["Likes"] = pd.to_numeric(df["Likes"], errors="coerce").fillna(0)
 st.title("📊 Instagram Posts Dashboard")
 
 # --- Username filter ---
-st.markdown("### 👤 Select Username")
+st.markdown("### 👤 Username")
 usernames = df["username"].unique()
 selected_user = st.selectbox("Select Username", usernames)
 user_data = df[df["username"] == selected_user]
@@ -51,20 +51,11 @@ time_range = st.slider(
     max_value=max_time,
     value=(min_time, max_time)
 )
-# --- Time filter ---
-user_data["Time"] = pd.to_datetime(user_data["Time"], format='%H:%M:%S').dt.time
-min_time, max_time = user_data["Time"].min(), user_data["Time"].max()
-time_range = st.slider(
-    "Select Time Range",
-    min_value=min_time,
-    max_value=max_time,
-    value=(min_time, max_time)
-)
 
-# --- Apply initial filters (date & time) ---
+# --- Apply filters ---
 filtered = user_data[
-    (user_data["Date"].dt.date >= from_date) &
-    (user_data["Date"].dt.date <= to_date) &
+    (user_data["Date"] >= pd.to_datetime(from_date)) &
+    (user_data["Date"] <= pd.to_datetime(to_date)) &
     (user_data["Time"] >= time_range[0]) &
     (user_data["Time"] <= time_range[1])
 ]
@@ -104,7 +95,7 @@ neu_pct = sentiment_counts.get("Neutral", 0.0)
 st.markdown("## User Overview")
 col1, col2, col3, col4, col5 = st.columns([2,1,1,1,2])
 with col1:
-    img_path = f"{selected_user}.jpg"  # Assuming images are in 'images/' folder
+    img_path = f"{selected_user}.jpg"  
     try:
         st.image(img_path, width=180, caption=f"[{selected_user}]({profile_url})" if profile_url else selected_user)
     except Exception:
@@ -112,6 +103,7 @@ with col1:
             st.markdown(f"**Name:** [{selected_user}]({profile_url})")
         else:
             st.markdown(f"**Name:** {selected_user}")
+
 with col2:
     st.write(f"📄 **Total Posts:** {formatted_posts}")
 with col3:
@@ -126,21 +118,6 @@ with col5:
         f"😐 Neutral: {neu_pct:.1f}%"
     )
 st.markdown("---")
-
-# --- Post filter dropdown (after User Overview) ---
-st.markdown("### 📝 Select Post")
-post_options = filtered["URL"].unique().tolist()
-selected_post = st.selectbox("Select Post", post_options)
-
-# Filter data for the selected post
-post_comments = filtered[filtered["URL"] == selected_post][["Comments", "Sentiment_Label", "Sentiment_Score"]]
-
-# Display comments table
-st.markdown("## Comments for Selected Post")
-if not post_comments.empty:
-    st.dataframe(post_comments.reset_index(drop=True))
-else:
-    st.write("No comments available for this post.")
 
 # --- Prepare Posts Summary Table ---
 summary_list = []
@@ -189,7 +166,7 @@ for url in urls_sorted:
     comments_only = post_group[post_group["Comments"].notna()]
 
     st.markdown(f"### 📌 [View Post]({url})")
-    
+   
     # Display caption
     caption_row = post_group[post_group["Captions"].notna()]
     if not caption_row.empty:
