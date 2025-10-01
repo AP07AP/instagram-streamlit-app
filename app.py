@@ -28,15 +28,29 @@ user_data = df[df["username"] == selected_user]
 first_post_url = user_data["URL"].iloc[0] if not user_data.empty else ""
 profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
 
-# --- Date & Time filter ---
+# --- Date filter with From and To ---
 st.markdown("### 📅 Date & Time")
+
+# Ensure Date is in datetime format
+user_data["Date"] = pd.to_datetime(user_data["Date"], format="%d-%m-%Y", errors="coerce")
+
 min_date, max_date = user_data["Date"].min().date(), user_data["Date"].max().date()
+
 col1, col2 = st.columns(2)
 with col1:
     from_date = st.date_input("From", value=min_date, min_value=min_date, max_value=max_date)
 with col2:
     to_date = st.date_input("To", value=max_date, min_value=min_date, max_value=max_date)
 
+# --- Time filter ---
+user_data["Time"] = pd.to_datetime(user_data["Time"], format='%H:%M:%S').dt.time
+min_time, max_time = user_data["Time"].min(), user_data["Time"].max()
+time_range = st.slider(
+    "Select Time Range",
+    min_value=min_time,
+    max_value=max_time,
+    value=(min_time, max_time)
+)
 # --- Time filter ---
 user_data["Time"] = pd.to_datetime(user_data["Time"], format='%H:%M:%S').dt.time
 min_time, max_time = user_data["Time"].min(), user_data["Time"].max()
