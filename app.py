@@ -3,7 +3,7 @@ import pandas as pd
 
 # --- Load dataset ---
 try:
-    df = pd.read_csv("data/sentiment_1.csv", parse_dates=["Date"])
+    df = pd.read_csv("data/sentiments.csv", parse_dates=["Date"])
 except FileNotFoundError:
     st.error("CSV file not found! Make sure 'data/sentiments.csv' exists.")
     st.stop()
@@ -19,7 +19,7 @@ df["Likes"] = pd.to_numeric(df["Likes"], errors="coerce").fillna(0)
 st.title("📊 Instagram Posts Dashboard")
 
 # --- Username filter ---
-st.markdown("### 👤 Username")
+st.markdown("### 👤 Select Username")
 usernames = df["username"].unique()
 selected_user = st.selectbox("Select Username", usernames)
 user_data = df[df["username"] == selected_user]
@@ -28,14 +28,9 @@ user_data = df[df["username"] == selected_user]
 first_post_url = user_data["URL"].iloc[0] if not user_data.empty else ""
 profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
 
-# --- Date filter with From and To ---
+# --- Date & Time filter ---
 st.markdown("### 📅 Date & Time")
-
-# Ensure Date is in datetime format
-user_data["Date"] = pd.to_datetime(user_data["Date"], format="%d-%m-%Y", errors="coerce")
-
 min_date, max_date = user_data["Date"].min().date(), user_data["Date"].max().date()
-
 col1, col2 = st.columns(2)
 with col1:
     from_date = st.date_input("From", value=min_date, min_value=min_date, max_value=max_date)
@@ -52,13 +47,26 @@ time_range = st.slider(
     value=(min_time, max_time)
 )
 
-# --- Apply filters ---
+# --- Apply initial filters (date & time) ---
 filtered = user_data[
-    (user_data["Date"] >= pd.to_datetime(from_date)) &
-    (user_data["Date"] <= pd.to_datetime(to_date)) &
+    (user_data["Date"].dt.date >= from_date) &
+    (user_data["Date"].dt.date <= to_date) &
     (user_data["Time"] >= time_range[0]) &
     (user_data["Time"] <= time_range[1])
 ]
+
+# --- Post filter (dropdown with checkboxes) ---
+st.markdown("### 📝 Select Posts to Display")
+post_options = filtered["Captions"].fillna("No Caption").tolist()
+selected_posts = st.multiselect(
+    "Select Posts",
+    options=post_options,
+    default=post_options  # all selected by default
+)
+
+# --- Apply post filter ---
+if selected_posts:
+    filtered = filtered[filtered["Captions"].fillna("No Caption").isin(selected_posts)]
 
 # --- Function to format number in Indian style ---
 def format_indian_number(number):
@@ -95,7 +103,7 @@ neu_pct = sentiment_counts.get("Neutral", 0.0)
 st.markdown("## User Overview")
 col1, col2, col3, col4, col5 = st.columns([2,1,1,1,2])
 with col1:
-    img_path = f"{selected_user}.jpg"  
+    img_path = f"images/{selected_user}.jpg"  # Assuming images are in 'images/' folder
     try:
         st.image(img_path, width=180, caption=f"[{selected_user}]({profile_url})" if profile_url else selected_user)
     except Exception:
@@ -103,7 +111,6 @@ with col1:
             st.markdown(f"**Name:** [{selected_user}]({profile_url})")
         else:
             st.markdown(f"**Name:** {selected_user}")
-
 with col2:
     st.write(f"📄 **Total Posts:** {formatted_posts}")
 with col3:
@@ -118,17 +125,6 @@ with col5:
         f"😐 Neutral: {neu_pct:.1f}%"
     )
 st.markdown("---")
-
-# --- POST FILTER SECTION (after User Overview) ---
-st.markdown("## 📌 Filter by Posts")
-
-# Get unique posts for the selected user
-user_posts = user_data["URL"].unique()
-selected_posts = st.multiselect("Select Post(s)", user_posts, default=user_posts)
-
-# Apply post filter if any post is selected
-if selected_posts:
-    filtered = filtered[filtered["URL"].isin(selected_posts)]
 
 # --- Prepare Posts Summary Table ---
 summary_list = []
