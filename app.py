@@ -119,6 +119,17 @@ with col5:
     )
 st.markdown("---")
 
+# --- POST FILTER SECTION (after User Overview) ---
+st.markdown("## 📌 Filter by Posts")
+
+# Get unique posts for the selected user
+user_posts = user_data["URL"].unique()
+selected_posts = st.multiselect("Select Post(s)", user_posts, default=user_posts)
+
+# Apply post filter if any post is selected
+if selected_posts:
+    filtered = filtered[filtered["URL"].isin(selected_posts)]
+
 # --- Prepare Posts Summary Table ---
 summary_list = []
 for url, post_group in filtered.groupby("URL"):
