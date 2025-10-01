@@ -119,22 +119,25 @@ with col5:
     )
 st.markdown("---")
 
-# --- Post filter dropdown (after User Overview) ---
-st.markdown("### 📝 Select Post")
+# --- Post filter multiselect dropdown ---
+st.markdown("### 📝 Select Posts")
 post_options = filtered["URL"].unique().tolist()
-selected_post = st.selectbox("Select Post", post_options)
+selected_posts = st.multiselect(
+    "Select Posts",
+    options=post_options,
+    default=post_options  # all posts selected by default
+)
 
-# Filter data for the selected post
-post_comments = filtered[filtered["URL"] == selected_post][["Comments", "Sentiment_Label", "Sentiment_Score"]]
+# Filter data for the selected posts
+post_comments = filtered[filtered["URL"].isin(selected_posts)][["URL", "Comments", "Sentiment_Label", "Sentiment_Score"]]
 
 # Display comments table
-st.markdown("## Comments for Selected Post")
+st.markdown("## Comments for Selected Post(s)")
 if not post_comments.empty:
     st.dataframe(post_comments.reset_index(drop=True))
 else:
-    st.write("No comments available for this post.")
+    st.write("No comments available for the selected post(s).")
 
-# --- Prepare Posts Summary Table ---
 summary_list = []
 for url, post_group in filtered.groupby("URL"):
     comments_only = post_group[post_group["Comments"].notna()]
