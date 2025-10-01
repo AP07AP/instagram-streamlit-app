@@ -89,7 +89,7 @@ neu_pct = sentiment_counts.get("Neutral", 0.0)
 st.markdown("## User Overview")
 col1, col2, col3, col4, col5 = st.columns([2,1,1,1,2])
 with col1:
-    img_path = f"images/{selected_user}.jpg"  # Assuming images are in 'images/' folder
+    img_path = f"{selected_user}.jpg"  # Assuming images are in 'images/' folder
     try:
         st.image(img_path, width=100, caption=selected_user)
     except Exception:
