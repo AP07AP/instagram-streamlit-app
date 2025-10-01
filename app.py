@@ -29,7 +29,12 @@ profile_url = first_post_url.split("/p/")[0] + "/" if first_post_url else ""
 
 # --- Date filter with From and To ---
 st.markdown("### 📅 Date")
+
+# Ensure Date is in datetime format
+user_data["Date"] = pd.to_datetime(user_data["Date"], format="%d-%m-%Y", errors="coerce")
+
 min_date, max_date = user_data["Date"].min().date(), user_data["Date"].max().date()
+
 col1, col2 = st.columns(2)
 with col1:
     from_date = st.date_input("From", value=min_date, min_value=min_date, max_value=max_date)
@@ -48,8 +53,8 @@ time_range = st.slider(
 
 # --- Apply filters ---
 filtered = user_data[
-    (user_data["Date"] >= pd.to_datetime(from_date)) &
-    (user_data["Date"] <= pd.to_datetime(to_date)) &
+    (user_data["Date"].dt.date >= from_date) & 
+    (user_data["Date"].dt.date <= to_date)
     (user_data["Time"] >= time_range[0]) &
     (user_data["Time"] <= time_range[1])
 ]
