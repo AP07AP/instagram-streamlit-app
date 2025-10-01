@@ -89,14 +89,15 @@ neu_pct = sentiment_counts.get("Neutral", 0.0)
 st.markdown("## User Overview")
 col1, col2, col3, col4, col5 = st.columns([2,1,1,1,2])
 with col1:
-    img_path = f"{selected_user}.jpg"  # Assuming images are in 'images/' folder
+    img_path = f"{selected_user}.jpg"  
     try:
-        st.image(img_path, width=100, caption=selected_user)
+        st.image(img_path, width=180, caption=f"[{selected_user}]({profile_url})" if profile_url else selected_user)
     except Exception:
         if profile_url:
             st.markdown(f"**Name:** [{selected_user}]({profile_url})")
         else:
             st.markdown(f"**Name:** {selected_user}")
+
 with col2:
     st.write(f"📄 **Total Posts:** {formatted_posts}")
 with col3:
