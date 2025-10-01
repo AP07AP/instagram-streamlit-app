@@ -128,15 +128,40 @@ selected_posts = st.multiselect(
     default=[]  # start with empty selection
 )
 
-# Filter comments for selected posts
-post_comments = filtered[filtered["URL"].isin(selected_posts)][["URL","Comments","Sentiment_Label","Sentiment_Score"]]
+if selected_posts:
+    for post_url in selected_posts:
+        post_group = filtered[filtered["URL"] == post_url]
 
-# Display comments table
-st.markdown("## Comments for Selected Post(s)")
-if not post_comments.empty:
-    st.dataframe(post_comments.reset_index(drop=True))
+        # Get caption row (first row with a caption)
+        caption_row = post_group[post_group["Captions"].notna()]
+        if not caption_row.empty:
+            caption_row = caption_row.iloc[0]
+            caption_text = caption_row["Captions"]
+            post_date = caption_row["Date"].date()
+            post_time = caption_row["Time"]
+            likes = format_indian_number(caption_row.get("Likes", 0))
+        else:
+            caption_text = ""
+            post_date = ""
+            post_time = ""
+            likes = 0
+
+        # --- Display Post Header ---
+        st.markdown(f"📌 [View Post]({post_url})")
+        st.write("**Caption:**")
+        st.write(caption_text)
+        st.write(f"📅 {post_date} 🕒 {post_time} ❤️ Likes: {likes}")
+
+        # --- Display comments table ---
+        post_comments = post_group[post_group["Comments"].notna()][["Comments", "Sentiment_Label", "Sentiment_Score"]]
+        if not post_comments.empty:
+            st.dataframe(post_comments.reset_index(drop=True))
+        else:
+            st.write("No comments available for this post.")
+
+        st.markdown("---")  # separator between posts
 else:
-    st.write("No comments available for the selected post(s).")
+    st.write("Select one or more posts from the dropdown to see comments.")
 
  # below
 
