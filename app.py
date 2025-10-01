@@ -53,8 +53,8 @@ time_range = st.slider(
 
 # --- Apply filters ---
 filtered = user_data[
-    (user_data["Date"].dt.date >= from_date) & 
-    (user_data["Date"].dt.date <= to_date)
+    (user_data["Date"] >= pd.to_datetime(from_date)) &
+    (user_data["Date"] <= pd.to_datetime(to_date)) &
     (user_data["Time"] >= time_range[0]) &
     (user_data["Time"] <= time_range[1])
 ]
