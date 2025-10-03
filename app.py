@@ -3,21 +3,24 @@ import pandas as pd
 from datetime import datetime
 import os
 from instagrapi import Client
+from dotenv import load_dotenv
+
+# ===============================
+# Load environment variables
+# ===============================
+load_dotenv()
+
+INSTAGRAM_USERNAME = os.getenv("INSTAGRAM_USERNAME")
+INSTAGRAM_PASSWORD = os.getenv("INSTAGRAM_PASSWORD")
+
+if not INSTAGRAM_USERNAME or not INSTAGRAM_PASSWORD:
+    st.warning("Please set your Instagram credentials in environment variables.")
+    st.stop()
 
 # ===============================
 # Dashboard Title
 # ===============================
 st.title("📊 Instagram Posts Dashboard")
-
-# ===============================
-# Instagram Login (Environment Variables Recommended)
-# ===============================
-INSTAGRAM_USERNAME = os.getenv("adiadiadi1044")
-INSTAGRAM_PASSWORD = os.getenv("Heybro@")
-
-if not INSTAGRAM_USERNAME or not INSTAGRAM_PASSWORD:
-    st.warning("Please set your Instagram credentials in environment variables.")
-    st.stop()
 
 # ===============================
 # Username Input (Target User)
@@ -118,14 +121,9 @@ if st.session_state.show_report:
         formatted_comments = format_indian_number(total_comments)
 
         st.markdown("## User Overview")
-        col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 2])
+        col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
         with col1:
-            img_path = f"{selected_user}.jpg"
-            try:
-                st.image(img_path, width=180, caption=selected_user)
-            except Exception:
-                st.markdown(f"**Name:** {selected_user}")
-
+            st.markdown(f"**User:** {selected_user}")
         with col2:
             st.write(f"📄 **Total Posts:** {formatted_posts}")
         with col3:
@@ -154,6 +152,6 @@ if st.session_state.show_report:
                 st.markdown(
                     f"**Caption:** {row['Captions']}  \n"
                     f"📅 {row['Date']} 🕒 {row['Time']} ❤️ Likes: {format_indian_number(row['Likes'])}  \n"
+                    f"💬 Comments: {format_indian_number(row['Comments'])}  \n"
                     f"🔗 [View Post]({url})"
                 )
-
