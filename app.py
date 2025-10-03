@@ -7,7 +7,7 @@ import pandas as pd
 try:
     df = pd.read_csv("data/sentiment_final.csv")
 except FileNotFoundError:
-    st.error("CSV file not found! Make sure 'sentiment_1.csv' exists.")
+    st.error("CSV file not found! Make sure 'sentiment_final.csv' exists.")
     st.stop()
 except pd.errors.EmptyDataError:
     st.error("CSV file is empty! Please provide a valid CSV with data.")
