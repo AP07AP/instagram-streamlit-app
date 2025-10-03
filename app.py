@@ -5,7 +5,7 @@ import pandas as pd
 # Load dataset
 # ===============================
 try:
-    df = pd.read_csv("data/sentiment_1.csv")
+    df = pd.read_csv("data/sentiment_final.csv")
 except FileNotFoundError:
     st.error("CSV file not found! Make sure 'sentiment_1.csv' exists.")
     st.stop()
