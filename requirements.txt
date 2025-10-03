@@ -1,7 +1,7 @@
+# requirements.txt
 streamlit
 pandas
 instagrapi
-torch
-transformer
+textblob
 emoji
 python-dotenv
