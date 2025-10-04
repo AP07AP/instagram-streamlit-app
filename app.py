@@ -171,7 +171,7 @@ if st.session_state.show_report:
                 st.subheader("📝 Selected Posts Details")
                 for url in selected_post_urls:
                     post_group = multi_posts[multi_posts["URL"] == url]
-                    caption_row = post_group[post_group["Captions"].notna()]
+                    caption_row = post_group[post_group["Captions"]]
                     if not caption_row.empty:
                         row = caption_row.iloc[0]
                         st.markdown(
