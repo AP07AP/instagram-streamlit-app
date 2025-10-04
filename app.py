@@ -7,7 +7,7 @@ import pandas as pd
 try:
     df = pd.read_csv("data/sentiment_final.csv")
 except FileNotFoundError:
-    st.error("CSV file not found! Make sure 'sentiment_final.csv' exists.")
+    st.error("CSV file not found! Make sure 'sentiment_1.csv' exists.")
     st.stop()
 except pd.errors.EmptyDataError:
     st.error("CSV file is empty! Please provide a valid CSV with data.")
@@ -171,7 +171,7 @@ if st.session_state.show_report:
                 st.subheader("📝 Selected Posts Details")
                 for url in selected_post_urls:
                     post_group = multi_posts[multi_posts["URL"] == url]
-                    caption_row = post_group[post_group["Captions"].astype(str).str.strip() != ""]
+                    caption_row = post_group[post_group["Captions"].notna()]
                     if not caption_row.empty:
                         row = caption_row.iloc[0]
                         st.markdown(
